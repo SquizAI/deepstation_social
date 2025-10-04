@@ -18,10 +18,12 @@ const SYSTEM_PROMPTS: Record<string, string> = {
   event: `You're an intelligent event assistant that can extract information from URLs, answer questions, and help users fill out forms conversationally.
 
 CONVERSATION STYLE:
-- Natural, friendly, and helpful
+- Natural, friendly, and helpful - speak like a human assistant
 - Answer any questions the user asks
 - Provide suggestions and context
 - Keep responses concise (2-3 sentences) but informative
+- Use plain text only - NO markdown, asterisks, hashtags, or special formatting
+- Speak naturally as if having a voice conversation
 
 ADVANCED INTELLIGENCE:
 
@@ -70,6 +72,11 @@ Example response format:
 
   post: `You are an AI assistant helping users create social media posts through natural conversation.
 
+CONVERSATION STYLE:
+- Speak naturally and conversationally - like a helpful human assistant
+- Use plain text only - NO markdown, asterisks, hashtags, or special formatting
+- Keep responses concise and friendly
+
 Ask friendly questions to gather post details:
 - Post content/caption
 - Platform (LinkedIn, Instagram, Twitter, etc.)
@@ -88,6 +95,11 @@ After each response, output a JSON block with extracted data:
 </formData>`,
 
   speaker: `You are an AI assistant helping users create speaker announcements through natural conversation.
+
+CONVERSATION STYLE:
+- Speak naturally and conversationally - like a helpful human assistant
+- Use plain text only - NO markdown, asterisks, hashtags, or special formatting
+- Keep responses concise and friendly
 
 Ask friendly questions to gather speaker details:
 - Speaker name and title
@@ -110,7 +122,12 @@ After each response, output a JSON block with extracted data:
 
 If the user mentions a company or person, use the research_topic tool to find their details.`,
 
-  generic: `You are a helpful AI assistant. Have a natural conversation and help the user with their request.`,
+  generic: `You are a helpful AI assistant. Have a natural conversation and help the user with their request.
+
+CONVERSATION STYLE:
+- Speak naturally and conversationally - like a helpful human assistant
+- Use plain text only - NO markdown, asterisks, hashtags, or special formatting
+- Keep responses concise and friendly`,
 }
 
 const RESEARCH_TOOL = {
@@ -126,6 +143,41 @@ const RESEARCH_TOOL = {
     },
     required: ['query'],
   },
+}
+
+// Clean markdown and formatting from AI response
+function cleanResponseText(text: string): string {
+  return text
+    // Remove markdown headers (# ## ###)
+    .replace(/^#{1,6}\s+/gm, '')
+    // Remove markdown bold (**text** or __text__)
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/__(.+?)__/g, '$1')
+    // Remove markdown italic (*text* or _text_)
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/_(.+?)_/g, '$1')
+    // Remove markdown strikethrough (~~text~~)
+    .replace(/~~(.+?)~~/g, '$1')
+    // Remove markdown code blocks (```text```)
+    .replace(/```[\s\S]*?```/g, '')
+    // Remove inline code (`text`)
+    .replace(/`(.+?)`/g, '$1')
+    // Remove markdown links [text](url)
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // Remove markdown blockquotes (> text)
+    .replace(/^>\s+/gm, '')
+    // Remove markdown horizontal rules (---, ***, ___)
+    .replace(/^[-*_]{3,}$/gm, '')
+    // Remove markdown unordered lists (- item, * item, + item)
+    .replace(/^[*\-+]\s+/gm, '')
+    // Remove markdown ordered lists (1. item)
+    .replace(/^\d+\.\s+/gm, '')
+    // Clean up multiple spaces
+    .replace(/\s{2,}/g, ' ')
+    // Clean up multiple line breaks
+    .replace(/\n{3,}/g, '\n\n')
+    // Trim whitespace
+    .trim()
 }
 
 export async function POST(request: NextRequest) {
@@ -238,9 +290,13 @@ CRITICAL: Only extract data for fields that exist in the list above. Use the EXA
           }
         }
 
+        // Clean the response text
+        const rawResponse = assistantMessage.replace(/<formData>[\s\S]*?<\/formData>/, '').trim()
+        const cleanedResponse = cleanResponseText(rawResponse)
+
         return NextResponse.json({
           success: true,
-          response: assistantMessage.replace(/<formData>[\s\S]*?<\/formData>/, '').trim(),
+          response: cleanedResponse,
           formData,
         })
       }
@@ -261,8 +317,9 @@ CRITICAL: Only extract data for fields that exist in the list above. Use the EXA
       }
     }
 
-    // Remove formData tags from response text
-    const cleanResponse = assistantMessage.replace(/<formData>[\s\S]*?<\/formData>/, '').trim()
+    // Remove formData tags and clean markdown formatting from response text
+    const rawResponse = assistantMessage.replace(/<formData>[\s\S]*?<\/formData>/, '').trim()
+    const cleanResponse = cleanResponseText(rawResponse)
 
     return NextResponse.json({
       success: true,
