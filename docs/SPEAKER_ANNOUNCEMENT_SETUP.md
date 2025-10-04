@@ -1,7 +1,7 @@
 # Speaker Announcement Generator - Setup Guide
 
 ## Overview
-The Speaker Announcement Generator automatically creates platform-optimized social media announcements for DeepStation speakers using OpenAI's GPT-4 API.
+The Speaker Announcement Generator automatically creates platform-optimized social media announcements for DeepStation speakers using OpenAI's GPT-5 API.
 
 ## Features Created
 
