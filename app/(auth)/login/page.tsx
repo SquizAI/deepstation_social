@@ -75,6 +75,26 @@ export default function LoginPage() {
             </div>
           )}
 
+          {/* Demo Credentials Info */}
+          <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="flex-1">
+                <p className="text-cyan-400 font-semibold text-sm mb-2">Try Demo Account</p>
+                <div className="space-y-1 text-xs">
+                  <p className="text-slate-300">
+                    <span className="text-slate-500">Email:</span> <span className="font-mono text-cyan-300">demo@deepstation.ai</span>
+                  </p>
+                  <p className="text-slate-300">
+                    <span className="text-slate-500">Password:</span> <span className="font-mono text-cyan-300">DeepStation2025!</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Quick Signup Button */}
           <button
             onClick={handleDemoClick}

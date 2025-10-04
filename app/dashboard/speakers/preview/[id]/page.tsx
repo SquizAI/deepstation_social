@@ -208,11 +208,11 @@ export default function SpeakerPreviewPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="min-h-screen bg-gradient-to-br from-[#201033] via-[#15092b] to-[#0a0513] p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading speaker...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fuchsia-500 mx-auto mb-4"></div>
+            <p className="text-slate-400">Loading speaker...</p>
           </div>
         </div>
       </div>
@@ -221,22 +221,24 @@ export default function SpeakerPreviewPage() {
 
   if (!speaker) {
     return (
-      <div className="container mx-auto p-6">
-        <Alert variant="error">Speaker not found</Alert>
+      <div className="min-h-screen bg-gradient-to-br from-[#201033] via-[#15092b] to-[#0a0513] p-4 sm:p-6 lg:p-8">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 backdrop-blur-sm">
+          <p className="text-red-300">Speaker not found</p>
+        </div>
       </div>
     )
   }
 
   if (isGenerating) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="min-h-screen bg-gradient-to-br from-[#201033] via-[#15092b] to-[#0a0513] p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-lg font-semibold text-gray-900 mb-2">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fuchsia-500 mx-auto mb-4"></div>
+            <p className="text-lg font-semibold text-white mb-2">
               Generating Announcements...
             </p>
-            <p className="text-gray-600">
+            <p className="text-slate-400">
               Creating platform-optimized content for all social channels
             </p>
           </div>
@@ -246,21 +248,31 @@ export default function SpeakerPreviewPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-7xl p-6">
-      <div className="mb-6">
-        <Button variant="outline" onClick={() => router.push('/dashboard/speakers')}>
-          ← Back to Speakers
-        </Button>
+    <div className="min-h-screen bg-gradient-to-br from-[#201033] via-[#15092b] to-[#0a0513] p-4 sm:p-6 lg:p-8">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-fuchsia-500/10 rounded-full blur-3xl animate-[float_20s_ease-in-out_infinite]"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-purple-500/10 rounded-full blur-3xl animate-[float_25s_ease-in-out_infinite_reverse]"></div>
       </div>
 
-      {error && (
-        <Alert variant="error" className="mb-6">
-          {error}
-        </Alert>
-      )}
+      <div className="relative max-w-7xl mx-auto">
+        <div className="mb-6">
+          <button
+            onClick={() => router.push('/dashboard/speakers')}
+            className="bg-white/5 border border-white/10 text-slate-300 px-4 py-2 rounded-lg font-medium hover:bg-white/10 transition-all"
+          >
+            ← Back to Speakers
+          </button>
+        </div>
 
-      {/* Speaker Info */}
-      <Card className="p-6 mb-6">
+        {error && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 backdrop-blur-sm">
+            <p className="text-red-300">{error}</p>
+          </div>
+        )}
+
+        {/* Speaker Info */}
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 sm:p-6 mb-6 hover:border-white/20 transition-all">
         <div className="flex items-start gap-6">
           {speaker.profile_photo_url && (
             <img
@@ -270,33 +282,36 @@ export default function SpeakerPreviewPage() {
             />
           )}
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{speaker.full_name}</h1>
-            <p className="text-lg text-gray-600 mb-2">
+            <h1 className="text-3xl font-bold text-white mb-2">{speaker.full_name}</h1>
+            <p className="text-lg text-slate-300 mb-2">
               {speaker.title} at {speaker.company}
             </p>
-            <p className="text-gray-700 mb-3">{speaker.bio}</p>
-            <div className="flex items-center gap-4 text-sm text-gray-600">
+            <p className="text-slate-400 mb-3">{speaker.bio}</p>
+            <div className="flex items-center gap-4 text-sm text-slate-400">
               <span>📅 {new Date(speaker.event_date).toLocaleDateString()}</span>
               <span>📍 {speaker.event_location}</span>
               <span>🎤 {speaker.presentation_type}</span>
             </div>
           </div>
         </div>
-        <div className="mt-4 pt-4 border-t">
-          <h3 className="font-semibold text-gray-900 mb-2">
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <h3 className="font-semibold text-white mb-2">
             "{speaker.presentation_title}"
           </h3>
-          <p className="text-gray-700">{speaker.presentation_description}</p>
+          <p className="text-slate-400">{speaker.presentation_description}</p>
         </div>
-      </Card>
+      </div>
 
       {/* Generated Announcements */}
-      <Card className="p-6">
+      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 sm:p-6 hover:border-white/20 transition-all">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Generated Announcements</h2>
-          <Button onClick={handleSchedulePost} size="lg">
+          <h2 className="text-2xl font-bold text-white">Generated Announcements</h2>
+          <button
+            onClick={handleSchedulePost}
+            className="bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-fuchsia-600 hover:to-purple-700 transition-all shadow-lg shadow-fuchsia-500/25"
+          >
             Schedule Posts
-          </Button>
+          </button>
         </div>
 
         <Tabs defaultValue={activeTab} onValueChange={(value) => setActiveTab(value as Platform)}>
@@ -314,39 +329,40 @@ export default function SpeakerPreviewPage() {
               {/* Content Editor */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">Content</h3>
+                  <h3 className="font-semibold text-white">Content</h3>
                   <div className="flex gap-2">
                     {isEditing[key] ? (
                       <>
-                        <Button
-                          variant="outline"
-                          size="sm"
+                        <button
                           onClick={() => handleCancelEdit(key)}
                           disabled={isSaving}
+                          className="bg-white/5 border border-white/10 text-slate-300 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-all disabled:opacity-50"
                         >
                           Cancel
-                        </Button>
-                        <Button
-                          size="sm"
+                        </button>
+                        <button
                           onClick={() => handleSaveEdit(key)}
                           disabled={isSaving}
+                          className="bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:from-fuchsia-600 hover:to-purple-700 transition-all disabled:opacity-50"
                         >
                           {isSaving ? 'Saving...' : 'Save'}
-                        </Button>
+                        </button>
                       </>
                     ) : (
                       <>
-                        <Button
-                          variant="outline"
-                          size="sm"
+                        <button
                           onClick={() => handleRegeneratePlatform(key)}
                           disabled={isRegenerating[key]}
+                          className="bg-white/5 border border-white/10 text-slate-300 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-all disabled:opacity-50"
                         >
                           {isRegenerating[key] ? 'Regenerating...' : 'Regenerate'}
-                        </Button>
-                        <Button size="sm" onClick={() => handleToggleEdit(key)}>
+                        </button>
+                        <button
+                          onClick={() => handleToggleEdit(key)}
+                          className="bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:from-fuchsia-600 hover:to-purple-700 transition-all"
+                        >
                           Edit
-                        </Button>
+                        </button>
                       </>
                     )}
                   </div>
@@ -359,25 +375,25 @@ export default function SpeakerPreviewPage() {
                       setEditedContent({ ...editedContent, [key]: e.target.value })
                     }
                     rows={12}
-                    className="font-mono text-sm"
+                    className="font-mono text-sm bg-white/5 border-white/10 text-white"
                   />
                 ) : (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <pre className="whitespace-pre-wrap text-sm text-gray-900">
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-4 backdrop-blur-sm">
+                    <pre className="whitespace-pre-wrap text-sm text-slate-300">
                       {editedContent[key]}
                     </pre>
                   </div>
                 )}
 
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-slate-400">
                   Character count: {editedContent[key].length}
                 </p>
               </div>
 
               {/* Platform Preview */}
               <div className="space-y-3">
-                <h3 className="font-semibold text-gray-900">Preview</h3>
-                <div className="flex justify-center bg-gray-100 p-8 rounded-lg">
+                <h3 className="font-semibold text-white">Preview</h3>
+                <div className="flex justify-center bg-white/5 p-8 rounded-lg border border-white/10">
                   <PlatformPreview
                     platform={key}
                     content={editedContent[key]}
@@ -389,16 +405,16 @@ export default function SpeakerPreviewPage() {
               {/* Speaker Card HTML (for reference) */}
               {speakerCardHtml[key] && (
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-900">Speaker Card HTML</h3>
-                  <details className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700">
+                  <h3 className="font-semibold text-white">Speaker Card HTML</h3>
+                  <details className="bg-white/5 border border-white/10 rounded-lg p-4 backdrop-blur-sm">
+                    <summary className="cursor-pointer text-sm font-medium text-fuchsia-400 hover:text-fuchsia-300">
                       View HTML Template
                     </summary>
-                    <pre className="mt-3 text-xs text-gray-700 overflow-x-auto">
+                    <pre className="mt-3 text-xs text-slate-300 overflow-x-auto">
                       {speakerCardHtml[key]}
                     </pre>
                   </details>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-slate-400">
                     Note: Use this HTML template with an image generation service to create
                     speaker card graphics.
                   </p>
@@ -407,7 +423,8 @@ export default function SpeakerPreviewPage() {
             </TabsContent>
           ))}
         </Tabs>
-      </Card>
+      </div>
+      </div>
     </div>
   )
 }

@@ -38,6 +38,7 @@ export interface Speaker {
   company: string
   bio: string
   profile_photo_url?: string
+  company_logo_url?: string
   linkedin?: string
   twitter?: string
   instagram?: string

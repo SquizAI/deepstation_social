@@ -9,7 +9,7 @@ import { SchedulePicker } from '@/components/posts/schedule-picker'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { Card } from '@/components/ui/card'
+import { WorkflowGenerator } from '@/components/ai/workflow-generator'
 
 type Platform = 'linkedin' | 'instagram' | 'twitter' | 'discord'
 
@@ -44,6 +44,7 @@ export default function NewPostPage() {
     message: string
   } | null>(null)
   const [userId, setUserId] = React.useState<string | null>(null)
+  const [isAIWorkflowOpen, setIsAIWorkflowOpen] = React.useState(false)
 
   // Fetch user and connected platforms
   React.useEffect(() => {
@@ -298,6 +299,45 @@ export default function NewPostPage() {
     }
   }
 
+  const handleAIContentGenerated = (generatedContent: any) => {
+    if (generatedContent.type === 'text') {
+      // Add generated text to current platform or all selected platforms
+      const updatedContent = { ...postContent }
+      selectedPlatforms.forEach(platform => {
+        if (!updatedContent[platform]) {
+          updatedContent[platform] = generatedContent.content
+        }
+      })
+      setPostContent(updatedContent)
+
+      setAlert({
+        variant: 'success',
+        title: 'AI Content Added',
+        message: 'Generated text has been added to your post.'
+      })
+    } else if (generatedContent.type === 'image' && generatedContent.imageUrl) {
+      // Add generated image to all selected platforms
+      const updatedImages = { ...images }
+      selectedPlatforms.forEach(platform => {
+        updatedImages[platform] = generatedContent.imageUrl!
+      })
+      setImages(updatedImages)
+
+      setAlert({
+        variant: 'success',
+        title: 'AI Image Added',
+        message: 'Generated image has been added to your post.'
+      })
+    } else if (generatedContent.type === 'video' && generatedContent.videoUrl) {
+      // Video would typically be handled similarly to images
+      setAlert({
+        variant: 'success',
+        title: 'AI Video Generated',
+        message: 'Generated video is ready to use. (Video upload not yet implemented)'
+      })
+    }
+  }
+
   const platformConfig = [
     { key: 'linkedin' as Platform, label: 'LinkedIn', icon: '💼', color: 'text-blue-600' },
     { key: 'instagram' as Platform, label: 'Instagram', icon: '📷', color: 'text-pink-600' },
@@ -306,27 +346,46 @@ export default function NewPostPage() {
   ]
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Create New Post</h1>
-        <p className="text-gray-600 mt-2">
-          Compose and schedule your social media posts across multiple platforms
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-[#201033] via-[#15092b] to-[#0a0513] p-4 sm:p-6 lg:p-8">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-fuchsia-500/10 rounded-full blur-3xl animate-[float_20s_ease-in-out_infinite]"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-purple-500/10 rounded-full blur-3xl animate-[float_25s_ease-in-out_infinite_reverse]"></div>
       </div>
 
+      <div className="relative max-w-7xl mx-auto">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Create New Post</h1>
+          <p className="text-slate-400 text-sm sm:text-base">
+            Compose and schedule your social media posts across multiple platforms
+          </p>
+        </div>
+
       {alert && (
-        <Alert variant={alert.variant} className="mb-6">
-          <AlertTitle>{alert.title}</AlertTitle>
-          <AlertDescription>{alert.message}</AlertDescription>
-        </Alert>
+        <div className={`mb-6 backdrop-blur-sm border rounded-xl p-4 ${
+          alert.variant === 'success' ? 'bg-green-500/10 border-green-500/20' :
+          alert.variant === 'error' ? 'bg-red-500/10 border-red-500/20' :
+          'bg-yellow-500/10 border-yellow-500/20'
+        }`}>
+          <h3 className={`font-medium ${
+            alert.variant === 'success' ? 'text-green-300' :
+            alert.variant === 'error' ? 'text-red-300' :
+            'text-yellow-300'
+          }`}>{alert.title}</h3>
+          <p className={`text-sm mt-1 ${
+            alert.variant === 'success' ? 'text-green-400/80' :
+            alert.variant === 'error' ? 'text-red-400/80' :
+            'text-yellow-400/80'
+          }`}>{alert.message}</p>
+        </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Main Content Area */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Platform Selection */}
-          <Card className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 sm:p-6 hover:border-white/20 transition-all">
+            <h2 className="text-lg font-semibold text-white mb-4">
               Select Platforms
             </h2>
             <div className="grid grid-cols-2 gap-4">
@@ -339,9 +398,9 @@ export default function NewPostPage() {
                     key={key}
                     className={`relative border rounded-lg p-4 transition-all ${
                       selectedPlatforms.includes(key)
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-300 bg-white'
-                    } ${!isConnected ? 'opacity-50' : 'cursor-pointer hover:border-blue-400'}`}
+                        ? 'border-fuchsia-500 bg-fuchsia-500/10'
+                        : 'border-white/10 bg-white/5'
+                    } ${!isConnected ? 'opacity-50' : 'cursor-pointer hover:border-white/20'}`}
                     onClick={() => isConnected && togglePlatform(key)}
                   >
                     <div className="flex items-center gap-3">
@@ -353,10 +412,10 @@ export default function NewPostPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-2xl">{icon}</span>
-                          <span className={`font-medium ${color}`}>{label}</span>
+                          <span className="font-medium text-white">{label}</span>
                         </div>
                         {!isConnected && (
-                          <p className="text-xs text-red-600 mt-1">Not connected</p>
+                          <p className="text-xs text-red-400 mt-1">Not connected</p>
                         )}
                       </div>
                     </div>
@@ -365,22 +424,33 @@ export default function NewPostPage() {
               })}
             </div>
             {connectedPlatforms.filter(p => !p.isConnected).length > 0 && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                <p className="text-sm text-yellow-800">
+              <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg backdrop-blur-sm">
+                <p className="text-sm text-yellow-300">
                   Some platforms are not connected.{' '}
-                  <a href="/dashboard/accounts" className="underline font-medium">
+                  <a href="/dashboard/accounts" className="underline font-medium text-yellow-200">
                     Connect platforms
                   </a>
                 </p>
               </div>
             )}
-          </Card>
+          </div>
 
           {/* Post Editor */}
-          <Card className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Post Content
-            </h2>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 sm:p-6 hover:border-white/20 transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">
+                Post Content
+              </h2>
+              <button
+                onClick={() => setIsAIWorkflowOpen(true)}
+                className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white rounded-lg hover:from-purple-600 hover:to-fuchsia-600 shadow-lg shadow-purple-500/30 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="font-medium">AI Generate</span>
+              </button>
+            </div>
             <PostEditor
               onSave={handleSaveDraft}
               initialContent={postContent}
@@ -389,20 +459,20 @@ export default function NewPostPage() {
               onImageUpload={handleImageUpload}
               onImageRemove={handleImageRemove}
             />
-          </Card>
+          </div>
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Preview */}
-          <Card className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Preview</h2>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 sm:p-6 hover:border-white/20 transition-all">
+            <h2 className="text-lg font-semibold text-white mb-4">Preview</h2>
             <div className="space-y-2 mb-4">
-              <label className="text-sm font-medium text-gray-700">Platform</label>
+              <label className="text-sm font-medium text-slate-300">Platform</label>
               <select
                 value={activePreview}
                 onChange={(e) => setActivePreview(e.target.value as Platform)}
-                className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                className="w-full h-10 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500 transition-all"
               >
                 {platformConfig.map(({ key, label, icon }) => (
                   <option key={key} value={key}>
@@ -416,37 +486,43 @@ export default function NewPostPage() {
               content={postContent[activePreview]}
               imageUrl={images[activePreview]}
             />
-          </Card>
+          </div>
 
           {/* Schedule Picker */}
-          <Card className="p-6">
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 sm:p-6 hover:border-white/20 transition-all">
             <SchedulePicker
               onSchedule={handleSchedule}
               onPostNow={handlePostNow}
             />
-          </Card>
+          </div>
 
           {/* Action Buttons */}
-          <Card className="p-6">
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 sm:p-6">
             <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full"
+              <button
                 onClick={() => handleSaveDraft(postContent)}
                 disabled={isSaving}
+                className="w-full bg-white/5 border border-white/10 text-slate-300 px-4 py-3 rounded-lg font-medium hover:bg-white/10 transition-all disabled:opacity-50"
               >
                 Save as Draft
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full"
+              </button>
+              <button
                 onClick={() => router.push('/dashboard')}
+                className="w-full bg-white/5 border border-white/10 text-slate-300 px-4 py-3 rounded-lg font-medium hover:bg-white/10 transition-all"
               >
                 Cancel
-              </Button>
+              </button>
             </div>
-          </Card>
+          </div>
         </div>
+      </div>
+
+      {/* AI Workflow Generator Modal */}
+      <WorkflowGenerator
+        isOpen={isAIWorkflowOpen}
+        onClose={() => setIsAIWorkflowOpen(false)}
+        onContentGenerated={handleAIContentGenerated}
+      />
       </div>
     </div>
   )

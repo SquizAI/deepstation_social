@@ -1,7 +1,6 @@
 <div align="center">
 
-<!-- Add your custom hero image here -->
-<!-- ![DeepStation Hero](./docs/images/hero.png) -->
+![DeepStation Hero](./docs/images/hero.png)
 
 # 🚀 DeepStation
 

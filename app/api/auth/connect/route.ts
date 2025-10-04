@@ -34,10 +34,10 @@ export async function GET(request: NextRequest) {
 
     // Validate platform configuration
     if (!validatePlatformConfig(platform)) {
-      return NextResponse.json(
-        { error: `${platform} is not configured. Please check environment variables.` },
-        { status: 500 }
-      );
+      // Redirect back to accounts page with error message
+      const errorUrl = new URL('/dashboard/accounts', request.url);
+      errorUrl.searchParams.set('error', `${platform} is not configured yet. OAuth credentials are missing.`);
+      return NextResponse.redirect(errorUrl);
     }
 
     // Check if user is authenticated

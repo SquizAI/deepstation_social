@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Platform } from '@/lib/types/oauth';
 import { PlatformCard } from '@/components/accounts/platform-card';
 import { useOAuth } from '@/lib/hooks/useOAuth';
@@ -22,6 +23,7 @@ interface AccountsResponse {
 }
 
 export default function ConnectedAccountsPage() {
+  const searchParams = useSearchParams();
   const [accounts, setAccounts] = useState<PlatformAccountData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,12 +53,36 @@ export default function ConnectedAccountsPage() {
 
   useEffect(() => {
     fetchAccounts();
-  }, []);
 
-  const handleConnect = (platform: Platform) => {
+    // Check for error in URL params
+    const urlError = searchParams.get('error');
+    if (urlError) {
+      setError(urlError);
+    }
+  }, [searchParams]);
+
+  const handleConnect = async (platform: Platform) => {
     setSuccessMessage(null);
     setError(null);
-    connect(platform);
+
+    // Check if OAuth is configured before attempting connection
+    try {
+      const checkResponse = await fetch(`/api/auth/connect?platform=${platform}`);
+
+      if (!checkResponse.ok) {
+        const errorData = await checkResponse.json();
+        if (checkResponse.status === 500 && errorData.error?.includes('not configured')) {
+          setError(`${platform.charAt(0).toUpperCase() + platform.slice(1)} OAuth is not configured yet. Please add your API credentials to .env.local`);
+          return;
+        }
+      }
+
+      // If check passed, redirect to OAuth flow
+      connect(platform);
+    } catch (err) {
+      setError('Failed to initiate OAuth connection. Please try again.');
+      console.error('Connection error:', err);
+    }
   };
 
   const handleDisconnect = async (platform: Platform) => {
@@ -76,7 +102,7 @@ export default function ConnectedAccountsPage() {
   const handleReconnect = (platform: Platform) => {
     setSuccessMessage(null);
     setError(null);
-    connect(platform);
+    handleConnect(platform);
   };
 
   const connectedCount = accounts.filter((acc) => acc.isConnected).length;
@@ -86,125 +112,139 @@ export default function ConnectedAccountsPage() {
   ).length;
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Connected Accounts</h1>
-        <p className="text-gray-600">
-          Manage your social media platform connections for posting and scheduling
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-[#201033] via-[#15092b] to-[#0a0513] p-4 sm:p-6 lg:p-8">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-fuchsia-500/10 rounded-full blur-3xl animate-[float_20s_ease-in-out_infinite]"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-purple-500/10 rounded-full blur-3xl animate-[float_25s_ease-in-out_infinite_reverse]"></div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-blue-600">{connectedCount}</div>
-          <div className="text-sm text-gray-600">Connected Accounts</div>
+      <div className="relative max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+            Connected Accounts
+          </h1>
+          <p className="text-slate-400 text-sm sm:text-base">
+            Manage your social media platform connections for posting and scheduling
+          </p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-gray-400">{4 - connectedCount}</div>
-          <div className="text-sm text-gray-600">Not Connected</div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 sm:p-6 hover:border-white/20 transition-all">
+            <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+              {connectedCount}
+            </div>
+            <div className="text-xs sm:text-sm text-slate-400 mt-1">Connected</div>
+          </div>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 sm:p-6 hover:border-white/20 transition-all">
+            <div className="text-2xl sm:text-3xl font-bold text-slate-400">{4 - connectedCount}</div>
+            <div className="text-xs sm:text-sm text-slate-400 mt-1">Not Connected</div>
+          </div>
+          {expiredCount > 0 && (
+            <div className="bg-white/5 backdrop-blur-sm border border-red-500/20 rounded-xl p-4 sm:p-6 hover:border-red-500/40 transition-all">
+              <div className="text-2xl sm:text-3xl font-bold text-red-400">{expiredCount}</div>
+              <div className="text-xs sm:text-sm text-slate-400 mt-1">Expired</div>
+            </div>
+          )}
+          {expiringCount > 0 && (
+            <div className="bg-white/5 backdrop-blur-sm border border-yellow-500/20 rounded-xl p-4 sm:p-6 hover:border-yellow-500/40 transition-all">
+              <div className="text-2xl sm:text-3xl font-bold text-yellow-400">{expiringCount}</div>
+              <div className="text-xs sm:text-sm text-slate-400 mt-1">Expiring Soon</div>
+            </div>
+          )}
         </div>
-        {expiredCount > 0 && (
-          <div className="bg-white border border-red-200 rounded-lg p-4">
-            <div className="text-2xl font-bold text-red-600">{expiredCount}</div>
-            <div className="text-sm text-gray-600">Expired Tokens</div>
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 bg-green-500/10 border border-green-500/20 rounded-xl p-4 flex items-start backdrop-blur-sm">
+            <div className="flex-shrink-0 text-green-400 mr-3 text-xl">✓</div>
+            <div className="flex-1">
+              <h3 className="font-medium text-green-300">Success</h3>
+              <p className="text-sm text-green-400/80 mt-1">{successMessage}</p>
+            </div>
+            <button
+              onClick={() => setSuccessMessage(null)}
+              className="ml-auto text-green-400 hover:text-green-300 transition-colors"
+            >
+              ✕
+            </button>
           </div>
         )}
-        {expiringCount > 0 && (
-          <div className="bg-white border border-yellow-200 rounded-lg p-4">
-            <div className="text-2xl font-bold text-yellow-600">{expiringCount}</div>
-            <div className="text-sm text-gray-600">Expiring Soon</div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-start backdrop-blur-sm">
+            <div className="flex-shrink-0 text-red-400 mr-3 text-xl">⚠</div>
+            <div className="flex-1">
+              <h3 className="font-medium text-red-300">Error</h3>
+              <p className="text-sm text-red-400/80 mt-1">{error}</p>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="ml-auto text-red-400 hover:text-red-300 transition-colors"
+            >
+              ✕
+            </button>
           </div>
         )}
-      </div>
 
-      {/* Success Message */}
-      {successMessage && (
-        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start">
-          <div className="flex-shrink-0 text-green-600 mr-3 text-xl">✓</div>
-          <div>
-            <h3 className="font-medium text-green-900">Success</h3>
-            <p className="text-sm text-green-700 mt-1">{successMessage}</p>
-          </div>
-          <button
-            onClick={() => setSuccessMessage(null)}
-            className="ml-auto text-green-600 hover:text-green-800"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
-          <div className="flex-shrink-0 text-red-600 mr-3 text-xl">⚠</div>
-          <div>
-            <h3 className="font-medium text-red-900">Error</h3>
-            <p className="text-sm text-red-700 mt-1">{error}</p>
-          </div>
-          <button
-            onClick={() => setError(null)}
-            className="ml-auto text-red-600 hover:text-red-800"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      {/* Loading State */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-gray-100 rounded-lg h-64 animate-pulse"></div>
-          ))}
-        </div>
-      ) : (
-        <>
-          {/* Platform Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-            {accounts.map((account) => (
-              <PlatformCard
-                key={account.platform}
-                platform={account.platform}
-                isConnected={account.isConnected}
-                providerUserId={account.providerUserId}
-                expiresAt={account.expiresAt}
-                createdAt={account.createdAt}
-                updatedAt={account.updatedAt}
-                isExpired={account.isExpired}
-                daysUntilExpiration={account.daysUntilExpiration}
-                onConnect={handleConnect}
-                onDisconnect={handleDisconnect}
-                onReconnect={handleReconnect}
-              />
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl h-48 sm:h-64 animate-pulse"></div>
             ))}
           </div>
-
-          {/* Help Section */}
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-blue-900 mb-2">
-              About Connected Accounts
-            </h2>
-            <div className="text-sm text-blue-800 space-y-2">
-              <p>
-                Connect your social media accounts to enable posting and scheduling across platforms.
-              </p>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>Tokens are securely encrypted and stored</li>
-                <li>LinkedIn and Instagram tokens expire after 60 days</li>
-                <li>Twitter tokens expire after 2 hours (auto-refreshed)</li>
-                <li>Discord tokens do not expire</li>
-                <li>You'll be notified when tokens are about to expire</li>
-              </ul>
-              <p className="mt-3">
-                <strong>Having issues?</strong> Try disconnecting and reconnecting your account.
-              </p>
+        ) : (
+          <>
+            {/* Platform Cards Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              {accounts.map((account) => (
+                <PlatformCard
+                  key={account.platform}
+                  platform={account.platform}
+                  isConnected={account.isConnected}
+                  providerUserId={account.providerUserId}
+                  expiresAt={account.expiresAt}
+                  createdAt={account.createdAt}
+                  updatedAt={account.updatedAt}
+                  isExpired={account.isExpired}
+                  daysUntilExpiration={account.daysUntilExpiration}
+                  onConnect={handleConnect}
+                  onDisconnect={handleDisconnect}
+                  onReconnect={handleReconnect}
+                />
+              ))}
             </div>
-          </div>
-        </>
-      )}
+
+            {/* Help Section */}
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 sm:p-6 hover:border-white/20 transition-all">
+              <h2 className="text-lg sm:text-xl font-semibold text-white mb-3">
+                About Connected Accounts
+              </h2>
+              <div className="text-xs sm:text-sm text-slate-300 space-y-3">
+                <p>
+                  Connect your social media accounts to enable posting and scheduling across platforms.
+                </p>
+                <ul className="list-disc list-inside space-y-1.5 ml-2 text-slate-400">
+                  <li>Tokens are securely encrypted and stored</li>
+                  <li>LinkedIn and Instagram tokens expire after 60 days</li>
+                  <li>Twitter tokens expire after 2 hours (auto-refreshed)</li>
+                  <li>Discord tokens do not expire</li>
+                  <li>You'll be notified when tokens are about to expire</li>
+                </ul>
+                <div className="pt-2 border-t border-white/10">
+                  <p className="text-slate-300">
+                    <span className="text-fuchsia-400 font-semibold">Having issues?</span> Try disconnecting and reconnecting your account.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
