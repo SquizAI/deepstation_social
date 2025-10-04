@@ -30,6 +30,17 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
+-- Create profile-photos bucket (public access for user avatars)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'profile-photos',
+  'profile-photos',
+  true,
+  5242880, -- 5MB in bytes
+  ARRAY['image/jpeg', 'image/png', 'image/webp']
+)
+ON CONFLICT (id) DO NOTHING;
+
 -- =============================================
 -- STORAGE POLICIES - POST IMAGES
 -- =============================================
@@ -117,6 +128,49 @@ CREATE POLICY "Users can delete own speaker photos"
   USING (
     bucket_id = 'speaker-photos' AND
     auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- =============================================
+-- STORAGE POLICIES - PROFILE PHOTOS
+-- =============================================
+
+-- Policy: Users can upload their own profile photos
+-- Folder structure: profile-photos/avatars/{user_id}/{filename}
+CREATE POLICY "Users can upload own profile photos"
+  ON storage.objects
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    bucket_id = 'profile-photos' AND
+    auth.uid()::text = (storage.foldername(name))[2]
+  );
+
+-- Policy: Public read access to all profile photos
+-- Allows public viewing of user avatars
+CREATE POLICY "Public can view profile photos"
+  ON storage.objects
+  FOR SELECT
+  TO public
+  USING (bucket_id = 'profile-photos');
+
+-- Policy: Users can update their own profile photos
+CREATE POLICY "Users can update own profile photos"
+  ON storage.objects
+  FOR UPDATE
+  TO authenticated
+  USING (
+    bucket_id = 'profile-photos' AND
+    auth.uid()::text = (storage.foldername(name))[2]
+  );
+
+-- Policy: Users can delete their own profile photos
+CREATE POLICY "Users can delete own profile photos"
+  ON storage.objects
+  FOR DELETE
+  TO authenticated
+  USING (
+    bucket_id = 'profile-photos' AND
+    auth.uid()::text = (storage.foldername(name))[2]
   );
 
 -- =============================================

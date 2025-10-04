@@ -32,7 +32,7 @@ export function DropdownMenu({ trigger, children, align = 'right' }: DropdownMen
       </div>
       {isOpen && (
         <div
-          className={`absolute z-50 mt-2 w-56 rounded-md border border-gray-200 bg-white shadow-lg ${
+          className={`absolute z-50 mt-2 w-56 rounded-md border border-white/10 bg-white/5 backdrop-blur-sm shadow-lg shadow-fuchsia-500/10 ${
             align === 'right' ? 'right-0' : 'left-0'
           }`}
         >
@@ -50,7 +50,7 @@ export interface DropdownMenuItemProps extends React.HTMLAttributes<HTMLDivEleme
 export function DropdownMenuItem({ children, icon, className = '', ...props }: DropdownMenuItemProps) {
   return (
     <div
-      className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer ${className}`}
+      className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-200 hover:bg-white/10 hover:backdrop-blur-sm cursor-pointer transition-all duration-300 ${className}`}
       {...props}
     >
       {icon && <span className="w-4 h-4">{icon}</span>}
@@ -60,5 +60,5 @@ export function DropdownMenuItem({ children, icon, className = '', ...props }: D
 }
 
 export function DropdownMenuSeparator() {
-  return <div className="my-1 h-px bg-gray-200" />
+  return <div className="my-1 h-px bg-white/10" />
 }

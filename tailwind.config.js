@@ -15,6 +15,15 @@ module.exports = {
         instagram: '#E4405F',
         discord: '#5865F2',
       },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
+      },
+      animation: {
+        float: 'float 20s ease-in-out infinite',
+      },
     },
   },
   plugins: [],
