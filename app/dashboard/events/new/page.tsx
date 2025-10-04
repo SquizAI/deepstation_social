@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { EventForm } from '@/components/events/event-form'
+import { UniversalVoiceAssistant } from '@/components/ai-agent/universal-voice-assistant'
 import { createClient } from '@/lib/supabase/client'
 import type { Event } from '@/lib/types/event'
 
@@ -10,6 +11,8 @@ export default function NewEventPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [formData, setFormData] = useState<Partial<Event>>({})
+  const formRef = useRef<any>(null)
 
   const handleSubmit = async (data: Partial<Event>) => {
     setIsLoading(true)
@@ -93,8 +96,20 @@ export default function NewEventPage() {
           </div>
         )}
 
-        {/* Form */}
-        <EventForm onSubmit={handleSubmit} isLoading={isLoading} />
+        {/* Form with AI-filled data */}
+        <EventForm
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+          initialData={formData}
+        />
+
+        {/* Universal Voice Assistant */}
+        <UniversalVoiceAssistant
+          formType="event"
+          onFormUpdate={(data) => {
+            setFormData((prev) => ({ ...prev, ...data }))
+          }}
+        />
       </div>
     </div>
   )

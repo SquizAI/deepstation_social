@@ -596,38 +596,83 @@ export function WorkflowGenerator({ onContentGenerated, onClose, isOpen }: Workf
   )
 }
 
-// Placeholder AI generation functions - Replace with actual API calls
+// Real AI generation functions using API endpoints
 
 async function generateTextContent(prompt: string, tone: string, platform: string): Promise<string> {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 2000))
+  try {
+    const response = await fetch('/api/ai/generate-prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userPrompt: prompt,
+        platform,
+        tone,
+        optimize: true,
+      }),
+    })
 
-  // Placeholder response
-  return `🚀 Exciting news from DeepStation!
+    if (!response.ok) {
+      throw new Error('Failed to generate text content')
+    }
 
-${prompt}
-
-This is a ${tone} post optimized for ${platform}. Our AI has crafted this engaging content to help you connect with your audience.
-
-#AI #DeepStation #Innovation #Technology
-
-[This is a placeholder. Replace with actual AI API integration]`
+    const data = await response.json()
+    return data.generatedPrompt || data.prompt || prompt
+  } catch (error) {
+    console.error('Text generation error:', error)
+    return `Error generating content: ${error instanceof Error ? error.message : 'Unknown error'}`
+  }
 }
 
 async function generateImageContent(prompt: string, style: string, aspectRatio: string): Promise<string> {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 3000))
+  try {
+    const response = await fetch('/api/ai/generate-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt,
+        model: 'gemini-2.5-flash-image',
+        aspectRatio,
+        numberOfImages: 1,
+        stylePreset: style,
+      }),
+    })
 
-  // Placeholder - return a sample image URL
-  // Replace with actual nano banana API integration
-  return `https://placehold.co/800x800/${encodeURIComponent('Generated with nano banana AI')}`
+    if (!response.ok) {
+      throw new Error('Failed to generate image')
+    }
+
+    const data = await response.json()
+    return data.images?.[0]?.url || data.images?.[0]?.base64 || ''
+  } catch (error) {
+    console.error('Image generation error:', error)
+    return ''
+  }
 }
 
 async function generateVideoContent(prompt: string, duration: number, quality: string): Promise<string> {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 5000))
+  try {
+    const response = await fetch('/api/ai/generate-video', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt,
+        resolution: quality === 'high' ? '1080p' : '720p',
+        duration,
+        aspectRatio: '16:9',
+        style: 'cinematic',
+        withAudio: false,
+        fps: 30,
+      }),
+    })
 
-  // Placeholder - return a sample video URL
-  // Replace with actual VEO3 API integration
-  return `https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4`
+    if (!response.ok) {
+      throw new Error('Failed to generate video')
+    }
+
+    const data = await response.json()
+    return data.video?.url || ''
+  } catch (error) {
+    console.error('Video generation error:', error)
+    return ''
+  }
 }

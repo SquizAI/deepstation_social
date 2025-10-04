@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { createClient } from '@/lib/supabase/client'
+import { InlineAIAssistant } from '@/components/ai/inline-ai-assistant'
 
 export interface PostContent {
   linkedin: string
@@ -118,9 +119,17 @@ export function PostEditor({
             <TabsContent key={key} value={key} className="mt-4 space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium text-gray-900">
-                    {label} Post Content
-                  </label>
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium text-gray-900">
+                      {label} Post Content
+                    </label>
+                    <InlineAIAssistant
+                      platform={key}
+                      onContentGenerated={(text) => handleContentChange(key, content[key] + (content[key] ? '\n\n' : '') + text)}
+                      onImageGenerated={(url) => onImageUpload?.(key, new File([url], 'ai-image.jpg'))}
+                      onVideoGenerated={(url) => console.log('Video generated:', url)}
+                    />
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-sm font-medium ${charInfo.color}`}>
                       {charInfo.current} / {charInfo.max}

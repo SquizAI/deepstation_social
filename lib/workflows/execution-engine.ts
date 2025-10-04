@@ -82,6 +82,7 @@ export class WorkflowExecutionEngine {
     let nodesExecuted = 0;
     let nodesFailed = 0;
     let lastOutput: any = null;
+    const nodeStates: Record<string, { status: string; output?: any; error?: string }> = {};
 
     try {
       // Find trigger node
@@ -100,12 +101,21 @@ export class WorkflowExecutionEngine {
         try {
           console.log(`Executing node: ${node.nodeKey} (${node.nodeType})`);
 
+          // Mark node as running
+          nodeStates[node.id || node.nodeKey] = { status: 'running' };
+
           const result = await this.executeNode(node);
 
           // Store result in variables
           this.context.variables.set(node.nodeKey, result);
           lastOutput = result;
           nodesExecuted++;
+
+          // Mark node as success
+          nodeStates[node.id || node.nodeKey] = {
+            status: 'success',
+            output: result,
+          };
 
           // Check cost limit
           if (this.context.totalCost > workflow.maxCostPerRun) {
@@ -120,7 +130,14 @@ export class WorkflowExecutionEngine {
           }
         } catch (error) {
           nodesFailed++;
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           console.error(`Node ${node.nodeKey} failed:`, error);
+
+          // Mark node as error
+          nodeStates[node.id || node.nodeKey] = {
+            status: 'error',
+            error: errorMessage,
+          };
 
           if (!workflow.retryOnFailure) {
             throw error;
@@ -137,6 +154,7 @@ export class WorkflowExecutionEngine {
         duration,
         nodesExecuted,
         nodesFailed,
+        nodeStates,
       };
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -148,6 +166,7 @@ export class WorkflowExecutionEngine {
         duration,
         nodesExecuted,
         nodesFailed,
+        nodeStates,
       };
     }
   }

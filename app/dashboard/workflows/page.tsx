@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { ConversationalBuilderV2 } from '@/components/workflows/conversational-builder-v2';
 
 interface Workflow {
   id: string;
@@ -20,6 +21,7 @@ export default function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAIBuilder, setShowAIBuilder] = useState(false);
 
   useEffect(() => {
     loadWorkflows();
@@ -84,25 +86,46 @@ export default function WorkflowsPage() {
                 Build autonomous AI workflows with visual drag-and-drop
               </p>
             </div>
-            <Button
-              onClick={createWorkflow}
-              className="bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white hover:opacity-90"
-            >
-              <svg
-                className="h-5 w-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setShowAIBuilder(true)}
+                className="bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:opacity-90"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Create Workflow
-            </Button>
+                <svg
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                  />
+                </svg>
+                Create with AI
+              </Button>
+              <Button
+                onClick={createWorkflow}
+                className="bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white hover:opacity-90"
+              >
+                <svg
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Create Manually
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -159,12 +182,8 @@ export default function WorkflowsPage() {
         {!isLoading && workflows.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {workflows.map((workflow) => (
-              <Link
-                key={workflow.id}
-                href={`/dashboard/workflows/${workflow.id}`}
-                className="block"
-              >
-                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:border-fuchsia-500/50 transition-all group">
+              <div key={workflow.id} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:border-fuchsia-500/50 transition-all group">
+                <Link href={`/dashboard/workflows/${workflow.id}`} className="block">
                   {/* Status Badge */}
                   <div className="flex items-center justify-between mb-4">
                     <span
@@ -218,8 +237,35 @@ export default function WorkflowsPage() {
                       </div>
                     )}
                   </div>
+                </Link>
+
+                {/* Action Buttons */}
+                <div className="mt-4 pt-4 border-t border-white/10 flex gap-2">
+                  <Link
+                    href={`/dashboard/workflows/builder/${workflow.id}`}
+                    className="flex-1"
+                  >
+                    <Button className="w-full bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white hover:opacity-90 text-sm">
+                      <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit
+                    </Button>
+                  </Link>
+                  <Link
+                    href={`/dashboard/workflows/${workflow.id}`}
+                    className="flex-1"
+                  >
+                    <Button variant="outline" className="w-full border-white/20 text-white hover:bg-white/10 text-sm">
+                      <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Run
+                    </Button>
+                  </Link>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
@@ -304,6 +350,30 @@ export default function WorkflowsPage() {
             </Link>
           </div>
         </div>
+
+        {/* AI Workflow Builder Modal */}
+        {showAIBuilder && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-4xl h-[80vh] relative">
+              <Button
+                onClick={() => setShowAIBuilder(false)}
+                variant="ghost"
+                className="absolute -top-12 right-0 text-white hover:text-slate-300"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </Button>
+              <ConversationalBuilderV2
+                onWorkflowCreated={(workflow) => {
+                  setShowAIBuilder(false);
+                  loadWorkflows(); // Refresh the list
+                  router.push(`/dashboard/workflows/${workflow.id}`);
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

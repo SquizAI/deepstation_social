@@ -1,9 +1,11 @@
 /**
  * Veo 3 Video Generation Integration
- * Google's latest video generation model (October 2025)
+ * Google's latest video generation model (2025)
  * Capabilities: 720p/1080p video with native audio, up to 8 seconds
- * Pricing: $0.35 per second of video
+ * Pricing: Veo 3 Fast - $0.40 per second with audio
  */
+
+import { GoogleGenAI } from '@google/genai';
 
 export interface Veo3VideoOptions {
   prompt: string;
@@ -36,46 +38,111 @@ export interface Veo3ImageToVideoOptions {
 
 /**
  * Veo 3 Service for DeepStation
- * Generate professional videos from text or images
+ * Generate professional videos from text or images using Google's Veo 3
  */
 export class Veo3Service {
+  private client: GoogleGenAI;
   private apiKey: string;
-  private baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/veo-3';
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.GOOGLE_AI_API_KEY || '';
+    this.client = new GoogleGenAI({ apiKey: this.apiKey });
   }
 
   /**
-   * Generate video from text prompt
+   * Generate video from text prompt using Veo 3 Fast
    * Perfect for: Social media shorts, product demos, marketing content
    */
   async generateVideo(options: Veo3VideoOptions): Promise<Veo3VideoResult> {
-    const cost = this.calculateCost(options.duration);
+    const startTime = Date.now();
+    const cost = this.calculateCost(options.duration, options.withAudio);
 
     // Validation
     if (options.duration < 1 || options.duration > 8) {
       throw new Error('Duration must be between 1 and 8 seconds');
     }
 
-    // In production, call actual Veo 3 API
-    // For now, return typed interface for workflow integration
-    console.log('Generating video with Veo 3:', {
-      prompt: options.prompt,
-      duration: options.duration,
-      resolution: options.resolution,
-      cost: `$${cost.toFixed(2)}`,
-    });
+    if (!this.apiKey) {
+      throw new Error('GOOGLE_AI_API_KEY is not configured');
+    }
 
-    return {
-      videoUrl: 'https://storage.googleapis.com/veo3-generated/video.mp4',
-      thumbnailUrl: 'https://storage.googleapis.com/veo3-generated/thumbnail.jpg',
-      duration: options.duration,
-      resolution: options.resolution,
-      hasAudio: options.withAudio || false,
-      cost,
-      generationTime: 30000, // ~30 seconds typical
+    try {
+      // Enhance prompt with style and technical details
+      const enhancedPrompt = this.enhancePrompt(options.prompt, options);
+
+      // Start video generation using Veo 3 Fast (veo-3-fast-001)
+      const model = options.withAudio ? 'veo-3-fast-001' : 'veo-3.0-generate-001';
+
+      let operation = await this.client.models.generateVideos({
+        model,
+        prompt: enhancedPrompt,
+        config: {
+          aspectRatio: options.aspectRatio || '16:9',
+          resolution: options.resolution,
+        },
+      });
+
+      // Poll until video is ready (max 2 minutes)
+      const maxAttempts = 24; // 2 minutes with 5s intervals
+      let attempts = 0;
+
+      while (!operation.done && attempts < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds
+        operation = await this.client.operations.getVideosOperation({
+          operation,
+        });
+        attempts++;
+      }
+
+      if (!operation.done) {
+        throw new Error('Video generation timeout - operation did not complete');
+      }
+
+      const generationTime = Date.now() - startTime;
+
+      // Extract video URL from response
+      const videoData = operation.response;
+      const videoUrl = videoData?.uri || videoData?.videoUri || '';
+      const thumbnailUrl = videoData?.thumbnailUri || videoUrl;
+
+      if (!videoUrl) {
+        throw new Error('No video URL returned from Veo 3');
+      }
+
+      return {
+        videoUrl,
+        thumbnailUrl,
+        duration: options.duration,
+        resolution: options.resolution,
+        hasAudio: options.withAudio || false,
+        cost,
+        generationTime,
+      };
+    } catch (error) {
+      console.error('Veo 3 generation error:', error);
+      throw new Error(
+        `Failed to generate video: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Enhance prompt with style and technical details
+   */
+  private enhancePrompt(prompt: string, options: Veo3VideoOptions): string {
+    const styleDescriptions = {
+      cinematic: 'cinematic photography, professional color grading, shallow depth of field, film grain',
+      documentary: 'documentary style, natural lighting, handheld camera movement, authentic feel',
+      animation: '3D animation, smooth motion, vibrant colors, stylized rendering',
+      realistic: 'photorealistic, ultra HD quality, natural lighting, detailed textures',
     };
+
+    const style = options.style ? styleDescriptions[options.style] : '';
+    const audioInstruction = options.withAudio
+      ? `Include natural sound effects and ambient audio. ${options.audioPrompt || ''}`
+      : '';
+
+    return `${prompt}. ${style}. ${audioInstruction}`.trim();
   }
 
   /**
@@ -157,10 +224,11 @@ export class Veo3Service {
 
   /**
    * Calculate cost based on duration
-   * Veo 3 pricing: $0.35 per second
+   * Veo 3 Fast pricing: $0.40 per second with audio
+   * Veo 3 pricing: $0.35 per second without audio
    */
-  private calculateCost(duration: number): number {
-    return duration * 0.35;
+  private calculateCost(duration: number, withAudio: boolean = false): number {
+    return withAudio ? duration * 0.40 : duration * 0.35;
   }
 
   /**

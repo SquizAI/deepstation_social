@@ -164,12 +164,14 @@
 - [x] Display recent workflow executions with status
 - [ ] Improve mobile responsiveness
 
-### Day 2: Complete Workflow Builder
-- [ ] Drag-and-drop node editor
-- [ ] Visual connection lines
-- [ ] Node configuration panels
-- [ ] Template library (5+ templates)
-- [ ] Workflow preview/testing
+### Day 2: Complete Workflow Builder ✅ 80% COMPLETE
+- [x] Claude Agent SDK integration into workflow engine
+- [x] 4 specialized Claude agents (content-optimizer, image-workflow-agent, video-content-agent, analytics-agent)
+- [x] 6 pre-built workflow templates using Claude agents
+- [x] 'claude-agent' node type in execution engine
+- [ ] Drag-and-drop node editor (UI)
+- [ ] Visual connection lines (UI)
+- [ ] Node configuration panels (UI)
 
 ### Day 3: Analytics Dashboard
 - [ ] Cost tracking visualizations
