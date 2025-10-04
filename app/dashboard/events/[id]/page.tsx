@@ -3,12 +3,13 @@ import { redirect, notFound } from 'next/navigation'
 import { EventManagementClient } from './event-management-client'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function EventManagementPage({ params }: PageProps) {
+  const { id } = await params
   const supabase = await createClient()
 
   const {
@@ -23,7 +24,7 @@ export default async function EventManagementPage({ params }: PageProps) {
   const { data: event } = await supabase
     .from('events')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user.id)
     .single()
 
@@ -35,7 +36,7 @@ export default async function EventManagementPage({ params }: PageProps) {
   const { data: registrations } = await supabase
     .from('event_registrations')
     .select('*')
-    .eq('event_id', params.id)
+    .eq('event_id', id)
     .order('created_at', { ascending: false })
 
   return <EventManagementClient event={event} registrations={registrations || []} />

@@ -272,7 +272,7 @@ export class GeminiImageService {
    * Build edit-specific prompt
    */
   private buildEditPrompt(editPrompt: string, editType?: string): string {
-    const typeInstructions = {
+    const typeInstructions: Record<string, string> = {
       background: 'Focus on changing only the background while preserving the main subject.',
       object: 'Modify or replace specific objects while maintaining overall composition.',
       style: 'Apply artistic style transfer while preserving content.',

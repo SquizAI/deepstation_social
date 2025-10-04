@@ -3,11 +3,20 @@
 import { useState, useRef, useEffect } from 'react'
 import { Mic, MicOff, Sparkles, Send } from 'lucide-react'
 
+interface FieldSchema {
+  name: string
+  type: string
+  label: string
+  required: boolean
+  placeholder?: string
+}
+
 interface ContinuousVoiceAssistantProps {
   isActive: boolean
   onToggle: () => void
   onFormUpdate: (data: any, currentField?: string) => void
   formType: 'event' | 'post' | 'speaker' | 'generic'
+  fieldSchema?: FieldSchema[]
 }
 
 interface Message {
@@ -19,7 +28,8 @@ export function ContinuousVoiceAssistant({
   isActive,
   onToggle,
   onFormUpdate,
-  formType = 'event'
+  formType = 'event',
+  fieldSchema = []
 }: ContinuousVoiceAssistantProps) {
   const [conversation, setConversation] = useState<Message[]>([])
   const [isListening, setIsListening] = useState(false)
@@ -33,8 +43,8 @@ export function ContinuousVoiceAssistant({
   const audioChunksRef = useRef<Blob[]>([])
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
-  const animationFrameRef = useRef<number>()
-  const silenceTimeoutRef = useRef<NodeJS.Timeout>()
+  const animationFrameRef = useRef<number | undefined>(undefined)
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll messages
@@ -201,6 +211,7 @@ export function ContinuousVoiceAssistant({
         body: JSON.stringify({
           conversation: updatedConversation,
           formType,
+          fieldSchema,
         }),
       })
 

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/layout/navbar'
 import { Sidebar } from '@/components/layout/sidebar'
+import { DashboardWrapper } from '@/components/layout/dashboard-wrapper'
 
 export default async function DashboardLayout({
   children,
@@ -37,7 +38,7 @@ export default async function DashboardLayout({
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            {children}
+            <DashboardWrapper>{children}</DashboardWrapper>
           </div>
         </main>
       </div>

@@ -219,11 +219,45 @@ export function Sidebar() {
       >
         <div className="flex h-full flex-col">
           {/* Logo/Brand */}
-          <div className="flex h-16 items-center gap-2 border-b border-white/10 px-6">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center shadow-lg shadow-fuchsia-500/50">
-              <span className="text-white font-bold text-sm">DS</span>
+          <div className="flex h-16 items-center gap-3 border-b border-white/10 px-6">
+            <div className="relative h-10 w-10 flex items-center justify-center">
+              {/* Layered depth rings representing "Deep" */}
+              <svg viewBox="0 0 40 40" className="w-full h-full">
+                <defs>
+                  <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#d946ef" />
+                    <stop offset="100%" stopColor="#9333ea" />
+                  </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                {/* Outer ring - Station */}
+                <circle cx="20" cy="20" r="18" fill="none" stroke="url(#logo-gradient)" strokeWidth="2" opacity="0.3" />
+                {/* Middle ring */}
+                <circle cx="20" cy="20" r="13" fill="none" stroke="url(#logo-gradient)" strokeWidth="2.5" opacity="0.6" />
+                {/* Inner core - representing depth */}
+                <circle cx="20" cy="20" r="7" fill="url(#logo-gradient)" filter="url(#glow)" />
+                {/* Connection nodes - representing network/station */}
+                <circle cx="20" cy="6" r="1.5" fill="#d946ef" opacity="0.8" />
+                <circle cx="34" cy="20" r="1.5" fill="#d946ef" opacity="0.8" />
+                <circle cx="20" cy="34" r="1.5" fill="#d946ef" opacity="0.8" />
+                <circle cx="6" cy="20" r="1.5" fill="#d946ef" opacity="0.8" />
+                {/* Energy waves */}
+                <path d="M 20 20 L 20 6" stroke="#d946ef" strokeWidth="1" opacity="0.4" />
+                <path d="M 20 20 L 34 20" stroke="#d946ef" strokeWidth="1" opacity="0.4" />
+                <path d="M 20 20 L 20 34" stroke="#d946ef" strokeWidth="1" opacity="0.4" />
+                <path d="M 20 20 L 6 20" stroke="#d946ef" strokeWidth="1" opacity="0.4" />
+              </svg>
             </div>
-            <span className="text-xl font-bold text-white">DeepStation</span>
+            <div className="flex flex-col">
+              <span className="text-xl font-bold text-white tracking-tight">DeepStation</span>
+              <span className="text-[10px] text-fuchsia-400 font-medium tracking-wider">AI STUDIO</span>
+            </div>
           </div>
 
           {/* Navigation */}

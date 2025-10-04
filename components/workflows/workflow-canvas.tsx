@@ -201,8 +201,7 @@ export function WorkflowCanvas({ nodes: workflowNodes, onNodesChange, readOnly =
           style={{ opacity: 0.1 }}
         />
         <Controls
-          className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg overflow-hidden"
-          style={{ button: { backgroundColor: 'rgba(255, 255, 255, 0.1)', border: 'none', color: 'white' } }}
+          className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg overflow-hidden [&_button]:bg-white/10 [&_button]:border-0 [&_button]:text-white"
         />
         <MiniMap
           nodeColor={(node) => {

@@ -125,9 +125,10 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
                   new Date(ticket.early_bird_deadline) > new Date()
 
                 const price = isEarlyBird ? ticket.early_bird_price : ticket.price
-                const isSoldOut =
+                const isSoldOut = Boolean(
                   ticket.quantity_available &&
                   ticket.quantity_sold >= ticket.quantity_available
+                )
 
                 return (
                   <label

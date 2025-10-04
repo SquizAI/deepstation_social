@@ -35,16 +35,9 @@ export function Navbar({ user }: NavbarProps) {
   return (
     <nav className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#201033]/80 backdrop-blur-xl">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Logo and Brand */}
+        {/* Left side - empty, logo is in sidebar */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center shadow-lg shadow-fuchsia-500/50">
-              <span className="text-white font-bold text-sm">DS</span>
-            </div>
-            <span className="text-xl font-bold text-white hidden sm:inline">
-              DeepStation
-            </span>
-          </div>
+          {/* Logo removed - now only in sidebar */}
         </div>
 
         {/* Right side */}

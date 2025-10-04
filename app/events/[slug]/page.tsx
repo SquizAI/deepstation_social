@@ -4,18 +4,19 @@ import { EventLandingClient } from './event-landing-client'
 import type { Metadata } from 'next'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params
   const supabase = await createClient()
 
   const { data: event } = await supabase
     .from('events')
     .select('*')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .eq('status', 'published')
     .single()
 
@@ -44,12 +45,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function EventLandingPage({ params }: PageProps) {
+  const { slug } = await params
   const supabase = await createClient()
 
   const { data: event } = await supabase
     .from('events')
     .select('*')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .eq('status', 'published')
     .single()
 

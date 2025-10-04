@@ -1,233 +1,348 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
+import { ContinuousVoiceAssistant } from './continuous-voice-assistant'
 
 interface UniversalVoiceAssistantProps {
-  onFormUpdate: (data: any) => void
-  formType: 'event' | 'post' | 'speaker' | 'generic'
+  // Optional: can be controlled externally
+  forceFormType?: 'event' | 'post' | 'speaker' | 'generic'
+}
+
+interface FieldCache {
+  element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+  name: string
+  selector: string
+}
+
+interface FieldSchema {
+  name: string
+  type: string
+  label: string
+  required: boolean
   placeholder?: string
 }
 
-export function UniversalVoiceAssistant({
-  onFormUpdate,
-  formType = 'generic',
-  placeholder = 'Describe what you want to create...'
-}: UniversalVoiceAssistantProps) {
-  const [isRecording, setIsRecording] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [transcript, setTranscript] = useState('')
-  const [aiResponse, setAiResponse] = useState('')
-  const [conversation, setConversation] = useState<Array<{role: 'user' | 'assistant', content: string}>>([])
-  const [audioLevel, setAudioLevel] = useState(0)
+export function UniversalVoiceAssistant({ forceFormType }: UniversalVoiceAssistantProps) {
+  const [isActive, setIsActive] = useState(false)
+  const [hasForm, setHasForm] = useState(false)
+  const [formType, setFormType] = useState<'event' | 'post' | 'speaker' | 'generic'>('generic')
+  const [fieldSchema, setFieldSchema] = useState<FieldSchema[]>([])
+  const pathname = usePathname()
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const audioChunksRef = useRef<Blob[]>([])
-  const audioContextRef = useRef<AudioContext | null>(null)
-  const analyserRef = useRef<AnalyserNode | null>(null)
-  const animationFrameRef = useRef<number>()
+  // Performance optimization: cache field lookups
+  const fieldCacheRef = useRef<Map<string, FieldCache>>(new Map())
+  const updateTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
+  const activeHighlightRef = useRef<HTMLElement | null>(null)
 
-  const startRecording = async () => {
-    try {
-      // Show initial greeting on first interaction
-      if (conversation.length === 0) {
-        setAiResponse("What's the event called?")
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-
-      // Set up audio visualization
-      const audioContext = new AudioContext()
-      const analyser = audioContext.createAnalyser()
-      const source = audioContext.createMediaStreamSource(stream)
-      source.connect(analyser)
-      analyser.fftSize = 256
-
-      audioContextRef.current = audioContext
-      analyserRef.current = analyser
-
-      // Visualize audio levels
-      const visualize = () => {
-        if (!analyserRef.current) return
-        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
-        analyserRef.current.getByteFrequencyData(dataArray)
-        const average = dataArray.reduce((a, b) => a + b) / dataArray.length
-        setAudioLevel(average / 255)
-        animationFrameRef.current = requestAnimationFrame(visualize)
-      }
-      visualize()
-
-      const mediaRecorder = new MediaRecorder(stream)
-      audioChunksRef.current = []
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data)
-        }
-      }
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-        await processAudio(audioBlob)
-        stream.getTracks().forEach(track => track.stop())
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current)
-        }
-        setAudioLevel(0)
-      }
-
-      mediaRecorder.start()
-      mediaRecorderRef.current = mediaRecorder
-      setIsRecording(true)
-    } catch (error) {
-      console.error('Failed to start recording:', error)
-      alert('Microphone access denied. Please allow microphone access and try again.')
+  // Detect form type from URL
+  useEffect(() => {
+    if (forceFormType) {
+      setFormType(forceFormType)
+      return
     }
-  }
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop()
-      setIsRecording(false)
+    // Auto-detect form type from pathname
+    if (pathname.includes('/events')) {
+      setFormType('event')
+    } else if (pathname.includes('/posts') || pathname.includes('/content')) {
+      setFormType('post')
+    } else if (pathname.includes('/speakers') || pathname.includes('/announcements')) {
+      setFormType('speaker')
+    } else {
+      setFormType('generic')
     }
-  }
+  }, [pathname, forceFormType])
 
-  const processAudio = async (audioBlob: Blob) => {
-    setIsProcessing(true)
+  // Build field cache and schema for faster lookups and AI context
+  const buildFieldCache = useCallback(() => {
+    const startTime = performance.now()
+    fieldCacheRef.current.clear()
 
-    try {
-      // Step 1: Transcribe with Deepgram
-      const formData = new FormData()
-      formData.append('audio', audioBlob)
+    const discoveredSchema: FieldSchema[] = []
 
-      const transcribeResponse = await fetch('/api/ai-agent/transcribe', {
-        method: 'POST',
-        body: formData,
+    // Find all form fields
+    const fields = document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+      'input, textarea, select'
+    )
+
+    fields.forEach(field => {
+      const name = field.name || field.id || field.getAttribute('data-field')
+      if (name) {
+        // Skip file inputs, buttons, hidden, checkbox, radio
+        if (field.type === 'file' || field.type === 'button' || field.type === 'submit' ||
+            field.type === 'hidden' || field.type === 'checkbox' || field.type === 'radio') {
+          return
+        }
+
+        // Add to cache
+        fieldCacheRef.current.set(name, {
+          element: field,
+          name,
+          selector: field.name ? `[name="${name}"]` : `[id="${name}"]`
+        })
+
+        // Try to find associated label
+        let label = ''
+        if (field.id) {
+          const labelElement = document.querySelector(`label[for="${field.id}"]`)
+          label = labelElement?.textContent?.trim() || ''
+        }
+        if (!label) {
+          // Try to find parent label
+          const parentLabel = field.closest('label')
+          label = parentLabel?.textContent?.trim() || ''
+        }
+        if (!label) {
+          // Use placeholder as fallback (select elements don't have placeholder)
+          label = ('placeholder' in field ? field.placeholder : undefined) || name
+        }
+
+        // Add to schema for AI context
+        discoveredSchema.push({
+          name,
+          type: field.type || 'text',
+          label: label,
+          required: field.required || false,
+          placeholder: ('placeholder' in field ? field.placeholder : undefined) || undefined,
+        })
+      }
+    })
+
+    // Update field schema state
+    setFieldSchema(discoveredSchema)
+
+    const elapsed = performance.now() - startTime
+    console.log(`[UniversalVA] Built field cache: ${fieldCacheRef.current.size} fields in ${elapsed.toFixed(2)}ms`)
+    console.log(`[UniversalVA] Discovered schema:`, discoveredSchema)
+  }, [])
+
+  // Detect if page has forms and build cache
+  useEffect(() => {
+    const checkForForms = () => {
+      const forms = document.querySelectorAll('form, input, textarea, select')
+      const hasFormElements = forms.length > 0
+      setHasForm(hasFormElements)
+
+      if (hasFormElements) {
+        buildFieldCache()
+      }
+    }
+
+    // Check immediately
+    checkForForms()
+
+    // Re-check when DOM changes (for dynamic forms)
+    const observer = new MutationObserver(() => {
+      checkForForms()
+    })
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    })
+
+    return () => observer.disconnect()
+  }, [pathname, buildFieldCache])
+
+  // Optimized field finder with caching
+  const findField = useCallback((fieldName: string): HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null => {
+    // Try cache first
+    const cached = fieldCacheRef.current.get(fieldName)
+    if (cached && document.body.contains(cached.element)) {
+      return cached.element
+    }
+
+    // Cache miss - try different selector strategies
+    const selectors = [
+      `[name="${fieldName}"]`,
+      `[id="${fieldName}"]`,
+      `[data-field="${fieldName}"]`,
+    ]
+
+    for (const selector of selectors) {
+      const field = document.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      if (field) {
+        // Update cache
+        fieldCacheRef.current.set(fieldName, { element: field, name: fieldName, selector })
+        return field
+      }
+    }
+
+    return null
+  }, [])
+
+  // Enhanced field highlighting with visual indicator
+  const highlightField = useCallback((field: HTMLElement) => {
+    const timestamp = new Date().toLocaleTimeString()
+
+    // Remove previous highlight
+    if (activeHighlightRef.current) {
+      activeHighlightRef.current.classList.remove(
+        'ring-4',
+        'ring-fuchsia-500',
+        'ring-offset-2',
+        'ring-offset-purple-900/50'
+      )
+      const oldIndicator = activeHighlightRef.current.parentElement?.querySelector('.field-indicator')
+      if (oldIndicator) oldIndicator.remove()
+    }
+
+    // Scroll into view with optimized timing
+    requestAnimationFrame(() => {
+      field.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+
+    // Focus with delay for smooth scrolling
+    setTimeout(() => {
+      if (
+        field instanceof HTMLInputElement ||
+        field instanceof HTMLTextAreaElement ||
+        field instanceof HTMLSelectElement
+      ) {
+        field.focus()
+      }
+    }, 300)
+
+    // Add enhanced highlight effect
+    field.classList.add('ring-4', 'ring-fuchsia-500', 'ring-offset-2', 'ring-offset-purple-900/50')
+
+    // Create visual indicator
+    const indicator = document.createElement('div')
+    indicator.className = 'field-indicator absolute -top-8 left-0 bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white text-xs px-3 py-1 rounded-full shadow-lg animate-bounce z-50'
+    indicator.textContent = '✨ Filling now'
+    indicator.style.cssText = 'animation: bounce 1s ease-in-out 3;'
+
+    // Insert indicator relative to field
+    const parent = field.parentElement
+    if (parent) {
+      const originalPosition = parent.style.position
+      if (!originalPosition || originalPosition === 'static') {
+        parent.style.position = 'relative'
+      }
+      parent.appendChild(indicator)
+    }
+
+    const fieldName = field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement
+      ? field.name || field.id
+      : field.id
+
+    activeHighlightRef.current = field
+
+    console.log(`[UniversalVA:${timestamp}] Highlighting field: ${fieldName}`)
+
+    // Remove highlight after duration
+    setTimeout(() => {
+      field.classList.remove('ring-4', 'ring-fuchsia-500', 'ring-offset-2', 'ring-offset-purple-900/50')
+      indicator.remove()
+      if (activeHighlightRef.current === field) {
+        activeHighlightRef.current = null
+      }
+    }, 3000)
+  }, [])
+
+  // Optimized field value setter with React event triggering
+  const setFieldValue = useCallback((field: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, value: string) => {
+    const startTime = performance.now()
+
+    // Get native value setter for the field type
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value'
+    )?.set
+    const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLTextAreaElement.prototype,
+      'value'
+    )?.set
+
+    // Set value using native setter to bypass React's control
+    if (field instanceof HTMLInputElement && nativeInputValueSetter) {
+      nativeInputValueSetter.call(field, value)
+    } else if (field instanceof HTMLTextAreaElement && nativeTextAreaValueSetter) {
+      nativeTextAreaValueSetter.call(field, value)
+    } else {
+      field.value = value
+    }
+
+    // Dispatch React events
+    field.dispatchEvent(new Event('input', { bubbles: true }))
+    field.dispatchEvent(new Event('change', { bubbles: true }))
+
+    const elapsed = performance.now() - startTime
+    console.log(`[UniversalVA] Set field value in ${elapsed.toFixed(2)}ms`)
+  }, [])
+
+  // Debounced form update handler for performance
+  const handleFormUpdate = useCallback((data: any, currentField?: string) => {
+    const timestamp = new Date().toLocaleTimeString()
+    console.log(`[UniversalVA:${timestamp}] Form update requested:`, data)
+
+    // Clear any pending updates
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current)
+    }
+
+    // Debounce the update slightly to batch rapid changes
+    updateTimeoutRef.current = setTimeout(() => {
+      const updateStart = performance.now()
+      let fieldsUpdated = 0
+
+      // Iterate through all form fields and populate them
+      Object.entries(data).forEach(([fieldName, value]) => {
+        if (value === null || value === undefined) return
+
+        const field = findField(fieldName)
+
+        if (field) {
+          setFieldValue(field, String(value))
+          fieldsUpdated++
+          console.log(`[UniversalVA:${timestamp}] ✓ ${fieldName} = "${value}"`)
+        } else {
+          console.warn(`[UniversalVA:${timestamp}] ✗ Field not found: ${fieldName}`)
+        }
       })
 
-      const { transcript: text } = await transcribeResponse.json()
-      setTranscript(text)
+      const updateElapsed = performance.now() - updateStart
+      console.log(`[UniversalVA:${timestamp}] Updated ${fieldsUpdated} fields in ${updateElapsed.toFixed(2)}ms`)
 
-      // Step 2: Process with Claude
-      const updatedConversation = [...conversation, { role: 'user' as const, content: text }]
-      setConversation(updatedConversation)
-
-      const aiResponse = await fetch('/api/ai-agent/process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversation: updatedConversation,
-          formType,
-        }),
-      })
-
-      const { response, formData: extractedData } = await aiResponse.json()
-
-      setAiResponse(response)
-      setConversation([...updatedConversation, { role: 'assistant', content: response }])
-
-      // Step 3: Update form
-      if (extractedData) {
-        onFormUpdate(extractedData)
+      // Highlight current field if specified
+      if (currentField) {
+        const field = findField(currentField)
+        if (field) {
+          highlightField(field)
+        }
       }
+    }, 50) // 50ms debounce
+  }, [findField, setFieldValue, highlightField])
 
-    } catch (error) {
-      console.error('Error processing audio:', error)
-      setAiResponse('Sorry, I encountered an error. Please try again.')
-    } finally {
-      setIsProcessing(false)
-      setTranscript('')
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current)
+      }
+      if (activeHighlightRef.current) {
+        activeHighlightRef.current.classList.remove(
+          'ring-4',
+          'ring-fuchsia-500',
+          'ring-offset-2',
+          'ring-offset-purple-900/50'
+        )
+      }
     }
+  }, [])
+
+  // Only show if page has forms
+  if (!hasForm) {
+    return null
   }
 
   return (
-    <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end gap-4">
-      {/* Conversation bubble */}
-      {aiResponse && !isRecording && (
-        <div className="max-w-sm bg-gradient-to-r from-fuchsia-500/90 to-purple-600/90 backdrop-blur-xl text-white rounded-2xl p-4 shadow-2xl shadow-fuchsia-500/50 animate-in slide-in-from-bottom-4">
-          <p className="text-sm">{aiResponse}</p>
-        </div>
-      )}
-
-      {/* Recording indicator */}
-      {transcript && isRecording && (
-        <div className="max-w-sm bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-2xl p-4">
-          <p className="text-xs text-slate-300 mb-1">You're saying:</p>
-          <p className="text-sm italic">"{transcript}"</p>
-        </div>
-      )}
-
-      {/* Main button */}
-      <button
-        onClick={isRecording ? stopRecording : startRecording}
-        disabled={isProcessing}
-        className="relative group"
-      >
-        {/* Glow effect */}
-        <div className={`absolute inset-0 rounded-full transition-all duration-300 ${
-          isRecording
-            ? 'bg-red-500 opacity-75 blur-xl animate-pulse'
-            : 'bg-gradient-to-r from-fuchsia-500 to-purple-600 opacity-75 blur-xl group-hover:opacity-100'
-        }`}></div>
-
-        {/* Audio visualization rings */}
-        {isRecording && (
-          <>
-            <div
-              className="absolute inset-0 rounded-full border-2 border-red-400 animate-ping"
-              style={{ opacity: audioLevel }}
-            ></div>
-            <div
-              className="absolute inset-2 rounded-full border-2 border-red-300"
-              style={{ opacity: audioLevel * 0.7, transform: `scale(${1 + audioLevel * 0.2})` }}
-            ></div>
-          </>
-        )}
-
-        {/* Main button */}
-        <div className={`relative w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-all ${
-          isRecording
-            ? 'bg-red-500 shadow-red-500/50'
-            : 'bg-gradient-to-r from-fuchsia-500 to-purple-600 shadow-fuchsia-500/50 group-hover:scale-110'
-        }`}>
-          {isProcessing ? (
-            <svg className="w-10 h-10 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          ) : isRecording ? (
-            <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <rect x="6" y="6" width="12" height="12" rx="2"></rect>
-            </svg>
-          ) : (
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-              />
-            </svg>
-          )}
-        </div>
-
-        {/* Status text */}
-        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-white font-medium">
-          {isProcessing ? 'Processing...' : isRecording ? 'Tap to stop' : 'Tap to speak'}
-        </div>
-      </button>
-
-      {/* Instructions (show on first load) */}
-      {conversation.length === 0 && !isRecording && (
-        <div className="absolute bottom-32 right-0 bg-black/90 backdrop-blur-sm text-white text-sm rounded-xl p-4 max-w-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-          <p className="font-semibold mb-2">Voice Assistant</p>
-          <ul className="text-xs space-y-1 text-slate-300">
-            <li>• Tap to start speaking</li>
-            <li>• Describe what you want to create</li>
-            <li>• Form fills automatically</li>
-            <li>• I can research info for you</li>
-          </ul>
-        </div>
-      )}
-    </div>
+    <ContinuousVoiceAssistant
+      isActive={isActive}
+      onToggle={() => setIsActive(!isActive)}
+      formType={formType}
+      onFormUpdate={handleFormUpdate}
+      fieldSchema={fieldSchema}
+    />
   )
 }

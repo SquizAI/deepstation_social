@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import { Node } from 'reactflow';
 import { Button } from '@/components/ui/button';
+import { ScheduleBuilder } from '@/components/schedule-builder';
+import { VariableAutocompleteInput } from '@/components/variable-autocomplete-input';
 
 interface NodeConfigPanelProps {
   node: Node;
   onUpdate: (nodeId: string, updates: any) => void;
   onClose: () => void;
   onDelete: (nodeId: string) => void;
+  allNodes?: Node[]; // For variable autocomplete
 }
 
 // Helper component for tooltips/help text
@@ -42,10 +45,11 @@ function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text);
 }
 
-export function NodeConfigPanel({ node, onUpdate, onClose, onDelete }: NodeConfigPanelProps) {
+export function NodeConfigPanel({ node, onUpdate, onClose, onDelete, allNodes = [] }: NodeConfigPanelProps) {
   const [nodeKey, setNodeKey] = useState(node.data.nodeKey);
   const [config, setConfig] = useState(node.data.config || {});
   const [copiedWebhook, setCopiedWebhook] = useState(false);
+  const [useVisualScheduler, setUseVisualScheduler] = useState(true);
 
   useEffect(() => {
     setNodeKey(node.data.nodeKey);
@@ -90,45 +94,67 @@ export function NodeConfigPanel({ node, onUpdate, onClose, onDelete }: NodeConfi
 
             {config.triggerType === 'scheduled' && (
               <>
-                <div>
+                {/* Phase 3: Visual Schedule Builder Toggle */}
+                <div className="flex items-center justify-between">
                   <SectionHeader
-                    title="Schedule (Cron Expression)"
-                    tooltip="Use cron syntax to define when your workflow runs. Click the examples below for common schedules."
+                    title="Schedule Configuration"
+                    tooltip="Choose between visual scheduler or manual cron expression input"
                   />
-                  <input
-                    type="text"
-                    value={config.schedule || '0 9 * * *'}
-                    onChange={(e) => setConfig({ ...config, schedule: e.target.value })}
-                    placeholder="0 9 * * *"
-                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white font-mono text-sm focus:border-fuchsia-500 focus:outline-none"
-                  />
-                  <HelpText>Format: minute hour day month weekday</HelpText>
+                  <button
+                    onClick={() => setUseVisualScheduler(!useVisualScheduler)}
+                    className="text-xs text-fuchsia-400 hover:text-fuchsia-300 flex items-center gap-1"
+                  >
+                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    {useVisualScheduler ? 'Switch to Cron' : 'Switch to Visual'}
+                  </button>
                 </div>
 
-                {/* Quick schedule options */}
-                <div>
-                  <label className="text-slate-300 text-xs mb-2 block font-medium">Common Schedules:</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { label: 'Daily at 9am', value: '0 9 * * *' },
-                      { label: 'Every 6 hours', value: '0 */6 * * *' },
-                      { label: 'Every hour', value: '0 * * * *' },
-                      { label: 'Weekdays at noon', value: '0 12 * * 1-5' },
-                    ].map(({ label, value }) => (
-                      <button
-                        key={value}
-                        onClick={() => setConfig({ ...config, schedule: value })}
-                        className={`px-3 py-2 rounded-lg text-xs transition-all ${
-                          config.schedule === value
-                            ? 'bg-fuchsia-500/20 border border-fuchsia-500/50 text-fuchsia-300'
-                            : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {useVisualScheduler ? (
+                  <ScheduleBuilder
+                    initialCron={config.schedule}
+                    onChange={(cron) => setConfig({ ...config, schedule: cron })}
+                  />
+                ) : (
+                  <>
+                    <div>
+                      <input
+                        type="text"
+                        value={config.schedule || '0 9 * * *'}
+                        onChange={(e) => setConfig({ ...config, schedule: e.target.value })}
+                        placeholder="0 9 * * *"
+                        className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white font-mono text-sm focus:border-fuchsia-500 focus:outline-none"
+                      />
+                      <HelpText>Format: minute hour day month weekday</HelpText>
+                    </div>
+
+                    {/* Quick schedule options */}
+                    <div>
+                      <label className="text-slate-300 text-xs mb-2 block font-medium">Quick Options:</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { label: 'Daily at 9am', value: '0 9 * * *' },
+                          { label: 'Every 6 hours', value: '0 */6 * * *' },
+                          { label: 'Every hour', value: '0 * * * *' },
+                          { label: 'Weekdays at noon', value: '0 12 * * 1-5' },
+                        ].map(({ label, value }) => (
+                          <button
+                            key={value}
+                            onClick={() => setConfig({ ...config, schedule: value })}
+                            className={`px-3 py-2 rounded-lg text-xs transition-all ${
+                              config.schedule === value
+                                ? 'bg-fuchsia-500/20 border border-fuchsia-500/50 text-fuchsia-300'
+                                : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </>
             )}
 
@@ -260,16 +286,15 @@ export function NodeConfigPanel({ node, onUpdate, onClose, onDelete }: NodeConfi
                 title="Additional Instructions (Optional)"
                 tooltip="Add specific guidelines for the agent. For example: 'Use professional tone' or 'Include emoji'."
               />
-              <textarea
+              {/* Phase 3: Variable Autocomplete for Instructions */}
+              <VariableAutocompleteInput
                 value={config.instructions || ''}
-                onChange={(e) => setConfig({ ...config, instructions: e.target.value })}
+                onChange={(value) => setConfig({ ...config, instructions: value })}
+                nodes={allNodes}
+                currentNodeId={node.id}
                 placeholder="Example: Always maintain a professional tone, include 3-5 relevant emojis, and keep posts under 1000 characters."
                 rows={4}
-                className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white text-sm focus:border-fuchsia-500 focus:outline-none resize-none"
               />
-              <HelpText>
-                Provide specific requirements like tone, style, length, or formatting preferences.
-              </HelpText>
             </div>
           </div>
         );
@@ -360,16 +385,15 @@ Keep it under 1,500 characters and maintain a professional yet conversational to
                 title="Prompt"
                 tooltip="Describe exactly what you want the AI to create. Be specific about style, tone, length, and requirements."
               />
-              <textarea
+              {/* Phase 3: Variable Autocomplete Input */}
+              <VariableAutocompleteInput
                 value={config.prompt || ''}
-                onChange={(e) => setConfig({ ...config, prompt: e.target.value })}
+                onChange={(value) => setConfig({ ...config, prompt: value })}
+                nodes={allNodes}
+                currentNodeId={node.id}
                 placeholder={examplePrompts[config.aiType as keyof typeof examplePrompts] || 'Enter your prompt here...'}
                 rows={8}
-                className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:border-fuchsia-500 focus:outline-none resize-none text-sm leading-relaxed"
               />
-              <HelpText>
-                Use {`{{variable}}`} to insert dynamic values from previous workflow nodes (e.g., {`{{trigger.topic}}`} or {`{{agent.output}}`}).
-              </HelpText>
 
               {/* Example prompt button */}
               <button

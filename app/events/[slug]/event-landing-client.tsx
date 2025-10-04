@@ -29,7 +29,7 @@ export function EventLandingClient({ event }: EventLandingClientProps) {
     return `${displayHour}:${minutes} ${ampm}`
   }
 
-  const isSoldOut = event.max_capacity && event.current_attendees >= event.max_capacity
+  const isSoldOut = !!(event.max_capacity && event.current_attendees >= event.max_capacity)
   const spotsLeft = event.max_capacity ? event.max_capacity - event.current_attendees : null
 
   const addToCalendar = (type: 'google' | 'apple' | 'outlook') => {

@@ -39,27 +39,12 @@ ADVANCED INTELLIGENCE:
    - Extract details even if not asked directly
    - If user says "tomorrow at 3pm", calculate the actual date
    - Understand "next week", "this Friday", relative dates
-   - Recognize event types from context (e.g., "networking session" = networking event)
+   - Recognize location types from context (e.g., "Zoom link" = online, "123 Main St" = in-person)
 
 4. MULTI-TURN CONTEXT:
    - Remember what's been filled already
    - Skip asking for info that's already provided
    - Acknowledge when user wants to change something
-
-DATA TO GATHER:
-title, description, event_date (YYYY-MM-DD), start_time (HH:MM), end_time, location_type (online/in-person/hybrid), venue_name, meeting_url, capacity, event_type, tags
-
-EXAMPLES:
-
-User: "https://www.linkedin.com/in/johndoe"
-You: "Let me look that up for you!" [Use research_topic to fetch LinkedIn data, extract name, title, company, bio]
-You: "I found John Doe's profile - Software Engineer at Tech Corp. Is this the speaker for your event?"
-
-User: "Can you help me fill out the description? Here's what it's about: We're hosting a workshop on machine learning..."
-You: "Got it! I'll use that for the description. What's the title of this workshop?"
-
-User: "It's this Friday at 2pm, capacity 100, online event"
-You: "Perfect! I've got it as an online event this Friday at 2pm for up to 100 people. What would you like to call it?"
 
 CRITICAL RULES:
 - ALWAYS use research_topic when user provides ANY URL
@@ -68,59 +53,18 @@ CRITICAL RULES:
 - Update multiple fields at once if user provides multiple details
 - **MANDATORY**: ALWAYS output the <formData> block after EVERY response, even if just asking a question
 - Include ALL data you've collected so far in EVERY formData block, not just new data
+- Use ONLY the field names that are available in the form (these will be listed below)
 
-EXTRACTION EXAMPLES:
+EXTRACTION FORMAT:
+After EVERY response, you MUST output extracted data in a <formData> JSON block.
+Use the EXACT field names from the "AVAILABLE FORM FIELDS" section.
+Set fields to their appropriate values or null if not yet filled.
 
-User: "Deep Station News"
-You: "Got it! I'll set that as the title. When is this event?"
+Example response format:
 <formData>
 {
-  "title": "Deep Station News",
-  "description": null,
-  "event_date": null,
-  "start_time": null,
-  "end_time": null,
-  "location_type": null,
-  "venue_name": null,
-  "meeting_url": null,
-  "capacity": null,
-  "event_type": null,
-  "tags": null
-}
-</formData>
-
-User: "Tomorrow at 3pm"
-You: "Perfect! Tomorrow at 3pm. How long will it last?"
-<formData>
-{
-  "title": "Deep Station News",
-  "description": null,
-  "event_date": "2025-10-05",
-  "start_time": "15:00",
-  "end_time": null,
-  "location_type": null,
-  "venue_name": null,
-  "meeting_url": null,
-  "capacity": null,
-  "event_type": null,
-  "tags": null
-}
-</formData>
-
-After EVERY response, you MUST output extracted data:
-<formData>
-{
-  "title": "value or null",
-  "description": "value or null",
-  "event_date": "YYYY-MM-DD or null",
-  "start_time": "HH:MM or null",
-  "end_time": "HH:MM or null",
-  "location_type": "online|in-person|hybrid or null",
-  "venue_name": "value or null",
-  "meeting_url": "value or null",
-  "capacity": number or null,
-  "event_type": "workshop|conference|meetup|webinar|networking or null",
-  "tags": ["tag1", "tag2"] or null
+  "field_name_1": "value or null",
+  "field_name_2": "value or null"
 }
 </formData>`,
 
@@ -173,7 +117,7 @@ const RESEARCH_TOOL = {
   name: 'research_topic',
   description: 'Research information about URLs, companies, venues, people, or topics. Can scrape and parse web pages, LinkedIn profiles, company websites, event pages, etc. Use this to extract structured data from any URL the user provides.',
   input_schema: {
-    type: 'object',
+    type: 'object' as const,
     properties: {
       query: {
         type: 'string',
@@ -187,7 +131,7 @@ const RESEARCH_TOOL = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { conversation, formType = 'generic' } = body
+    const { conversation, formType = 'generic', fieldSchema = [] } = body
 
     if (!conversation || !Array.isArray(conversation)) {
       return NextResponse.json(
@@ -217,7 +161,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const systemPrompt = SYSTEM_PROMPTS[formType] || SYSTEM_PROMPTS.generic
+    let systemPrompt = SYSTEM_PROMPTS[formType] || SYSTEM_PROMPTS.generic
+
+    // If field schema is provided, append it to the system prompt
+    if (fieldSchema && fieldSchema.length > 0) {
+      const fieldList = fieldSchema.map((f: any) => `- ${f.name} (${f.type}): ${f.label}${f.required ? ' [REQUIRED]' : ''}`).join('\n')
+
+      systemPrompt = `${systemPrompt}
+
+AVAILABLE FORM FIELDS ON THIS PAGE:
+The following fields are available in the current form. You MUST use these EXACT field names in your formData output:
+
+${fieldList}
+
+CRITICAL: Only extract data for fields that exist in the list above. Use the EXACT field names shown (e.g., "location_name" NOT "venue_name").`
+    }
 
     // Call Claude with user's preferred model
     const response = await anthropic.messages.create({
@@ -245,7 +203,7 @@ export async function POST(request: NextRequest) {
 
         const researchData = await researchResponse.json()
 
-        // Continue conversation with tool result
+        // Continue conversation with tool result (using the same systemPrompt with field schema)
         const continuedResponse = await anthropic.messages.create({
           model,
           max_tokens: maxTokens,

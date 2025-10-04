@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { EventForm } from '@/components/events/event-form'
-import { ContinuousVoiceAssistant } from '@/components/ai-agent/continuous-voice-assistant'
 import { createClient } from '@/lib/supabase/client'
 import type { Event } from '@/lib/types/event'
 
@@ -11,35 +10,6 @@ export default function NewEventPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [formData, setFormData] = useState<Partial<Event>>({})
-  const [aiActive, setAiActive] = useState(false)
-  const [currentField, setCurrentField] = useState<string | null>(null)
-  const formRef = useRef<any>(null)
-
-  // Auto-scroll to current field and focus it
-  useEffect(() => {
-    if (currentField) {
-      const fieldElement = document.querySelector(`[name="${currentField}"]`) as HTMLElement
-      if (fieldElement) {
-        fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-
-        // Focus the field
-        setTimeout(() => {
-          if (fieldElement instanceof HTMLInputElement ||
-              fieldElement instanceof HTMLTextAreaElement ||
-              fieldElement instanceof HTMLSelectElement) {
-            fieldElement.focus()
-          }
-        }, 300)
-
-        // Add highlight effect
-        fieldElement.classList.add('ring-2', 'ring-fuchsia-500', 'ring-offset-2')
-        setTimeout(() => {
-          fieldElement.classList.remove('ring-2', 'ring-fuchsia-500', 'ring-offset-2')
-        }, 2000)
-      }
-    }
-  }, [currentField])
 
   const handleSubmit = async (data: Partial<Event>) => {
     setIsLoading(true)
@@ -123,30 +93,10 @@ export default function NewEventPage() {
           </div>
         )}
 
-        {/* Form with AI-filled data */}
+        {/* Form - voice assistant will populate fields automatically */}
         <EventForm
           onSubmit={handleSubmit}
           isLoading={isLoading}
-          initialData={formData}
-        />
-
-        {/* Continuous Voice Assistant */}
-        <ContinuousVoiceAssistant
-          isActive={aiActive}
-          onToggle={() => setAiActive(!aiActive)}
-          formType="event"
-          onFormUpdate={(data, field) => {
-            console.log('[Page] Updating form data:', data)
-            setFormData((prev) => {
-              const updated = { ...prev, ...data }
-              console.log('[Page] New form state:', updated)
-              return updated
-            })
-            if (field) {
-              console.log('[Page] Setting current field:', field)
-              setCurrentField(field)
-            }
-          }}
         />
       </div>
     </div>

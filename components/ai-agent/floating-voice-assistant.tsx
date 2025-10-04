@@ -21,7 +21,7 @@ export function FloatingVoiceAssistant({ onFormUpdate }: FloatingVoiceAssistantP
   const [isExpanded, setIsExpanded] = useState(false)
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
-  const animationFrameRef = useRef<number>()
+  const animationFrameRef = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     const vapiInstance = new Vapi(VAPI_PUBLIC_KEY)

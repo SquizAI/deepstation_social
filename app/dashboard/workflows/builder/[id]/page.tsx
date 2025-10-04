@@ -26,6 +26,8 @@ import { NodeConfigPanel } from '@/components/node-config-panel';
 import { WorkflowTemplatesModal, WorkflowTemplate } from '@/components/workflow-templates';
 import { WorkflowValidationPanel } from '@/components/workflow-validation-panel';
 import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal';
+import { WorkflowExecutionHistory, saveExecutionToHistory } from '@/components/workflow-execution-history';
+import { WorkflowTestMode } from '@/components/workflow-test-mode';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useWorkflowHistory } from '@/hooks/useWorkflowHistory';
 
@@ -501,6 +503,10 @@ function WorkflowBuilderContent() {
   const [showValidationPanel, setShowValidationPanel] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
 
+  // Phase 3 feature states
+  const [showTestMode, setShowTestMode] = useState(false);
+  const [showExecutionHistory, setShowExecutionHistory] = useState(false);
+
   // Phase 2 feature states
   const [nodeSearchQuery, setNodeSearchQuery] = useState('');
   const [isDragging, setIsDragging] = useState(false);
@@ -849,6 +855,7 @@ function WorkflowBuilderContent() {
   }, []);
 
   const executeWorkflow = async () => {
+    const startTime = Date.now();
     setExecutionState({ status: 'running', nodeStates: {} });
 
     // Convert nodes to workflow format
@@ -870,6 +877,7 @@ function WorkflowBuilderContent() {
       });
 
       const result = await response.json();
+      const endTime = Date.now();
 
       setExecutionState({
         status: result.success ? 'completed' : 'failed',
@@ -877,6 +885,9 @@ function WorkflowBuilderContent() {
       });
 
       // Update node statuses
+      let successCount = 0;
+      const executionLogs: any[] = [];
+
       nodes.forEach((node) => {
         const state = result.nodeStates?.[node.id];
         if (state) {
@@ -885,11 +896,85 @@ function WorkflowBuilderContent() {
             output: state.output,
             error: state.error,
           });
+
+          if (state.status === 'success') successCount++;
+
+          executionLogs.push({
+            nodeId: node.id,
+            nodeKey: node.data.nodeKey,
+            nodeType: node.data.nodeType,
+            status: state.status,
+            startTime: new Date(state.startTime || startTime),
+            endTime: new Date(state.endTime || endTime),
+            duration: state.duration || 0,
+            output: state.output,
+            error: state.error,
+            metadata: state.metadata,
+          });
         }
+      });
+
+      // Save execution to history
+      saveExecutionToHistory(workflowId, {
+        workflowId,
+        timestamp: new Date(startTime),
+        status: result.success ? 'success' : successCount > 0 ? 'partial' : 'failed',
+        duration: endTime - startTime,
+        nodesExecuted: successCount,
+        totalNodes: nodes.length,
+        logs: executionLogs,
       });
     } catch (error) {
       setExecutionState({ status: 'failed', nodeStates: {} });
     }
+  };
+
+  // Phase 3: Test mode execution
+  const executeTestWorkflow = async (testData: Record<string, any>) => {
+    const results: any[] = [];
+
+    for (const node of nodes) {
+      const startTime = Date.now();
+
+      try {
+        // Simulate node execution with test data
+        await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+
+        const nodeTestData = testData[node.id];
+        const output = nodeTestData
+          ? `Processed: ${JSON.stringify(nodeTestData).substring(0, 50)}...`
+          : 'Test output';
+
+        results.push({
+          nodeId: node.id,
+          nodeKey: node.data.nodeKey,
+          status: 'success',
+          output,
+          duration: Date.now() - startTime,
+        });
+
+        // Update node visual status
+        updateNode(node.id, {
+          status: 'success',
+          output,
+        });
+      } catch (error) {
+        results.push({
+          nodeId: node.id,
+          nodeKey: node.data.nodeKey,
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          duration: Date.now() - startTime,
+        });
+
+        updateNode(node.id, {
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return results;
   };
 
   const saveWorkflow = async () => {
@@ -1139,6 +1224,34 @@ function WorkflowBuilderContent() {
             </Button>
           </div>
 
+          {/* Phase 3: Test Mode & History Buttons */}
+          <div className="flex items-center gap-1 border-r border-white/10 pr-3">
+            <Button
+              onClick={() => setShowTestMode(!showTestMode)}
+              className={`${
+                showTestMode
+                  ? 'bg-blue-500/30 border border-blue-500/50'
+                  : 'bg-white/10 hover:bg-white/20'
+              } text-white`}
+              title="Toggle test mode"
+            >
+              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+              Test Mode
+            </Button>
+            <Button
+              onClick={() => setShowExecutionHistory(true)}
+              className="bg-white/10 hover:bg-white/20 text-white"
+              title="View execution history"
+            >
+              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              History
+            </Button>
+          </div>
+
           <Button
             onClick={() => setShowTemplatesModal(true)}
             className="bg-white/10 hover:bg-white/20 text-white"
@@ -1322,6 +1435,8 @@ function WorkflowBuilderContent() {
                   </div>
                 )}
               </div>
+                );
+              });
 
               // Show empty state if no results
               if (nodeSearchQuery && visibleCategoriesCount === 0) {
@@ -1457,6 +1572,7 @@ function WorkflowBuilderContent() {
               setSelectedNodeId(null);
             }}
             onDelete={deleteNode}
+            allNodes={nodes}
           />
         )}
 
@@ -1485,7 +1601,22 @@ function WorkflowBuilderContent() {
         isOpen={showKeyboardShortcuts}
         onClose={() => setShowKeyboardShortcuts(false)}
       />
+
+      {/* Phase 3: Execution History Modal */}
+      <WorkflowExecutionHistory
+        isOpen={showExecutionHistory}
+        onClose={() => setShowExecutionHistory(false)}
+        workflowId={workflowId}
+      />
     </div>
+
+    {/* Phase 3: Test Mode Panel (outside main modal) */}
+    <WorkflowTestMode
+      isOpen={showTestMode}
+      onClose={() => setShowTestMode(false)}
+      nodes={nodes}
+      onRunTest={executeTestWorkflow}
+    />
     </WorkflowBuilderModal>
   );
 }

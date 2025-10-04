@@ -196,8 +196,8 @@ export async function extractYouTubeMetadata(
 
     // Fetch metadata from multiple sources
     const [oembedData, pageData] = await Promise.all([
-      fetchOEmbedData(videoId).catch(() => ({})),
-      scrapeVideoPage(videoId).catch(() => ({})),
+      fetchOEmbedData(videoId).catch(() => ({} as Partial<YouTubeMetadata>)),
+      scrapeVideoPage(videoId).catch(() => ({} as Partial<YouTubeMetadata>)),
     ]);
 
     // Optionally fetch transcript
@@ -207,20 +207,23 @@ export async function extractYouTubeMetadata(
     }
 
     // Combine all data
+    const oembedDataTyped = oembedData as Partial<YouTubeMetadata>;
+    const pageDataTyped = pageData as Partial<YouTubeMetadata>;
+
     const metadata: YouTubeMetadata = {
       videoId,
       url: `https://www.youtube.com/watch?v=${videoId}`,
-      title: oembedData.title || 'Unknown Title',
-      description: pageData.description || '',
-      channelName: oembedData.channelName || 'Unknown Channel',
-      channelId: pageData.channelId || '',
-      thumbnails: oembedData.thumbnails || {
+      title: oembedDataTyped.title || 'Unknown Title',
+      description: pageDataTyped.description || '',
+      channelName: oembedDataTyped.channelName || 'Unknown Channel',
+      channelId: pageDataTyped.channelId || '',
+      thumbnails: oembedDataTyped.thumbnails || {
         default: `https://img.youtube.com/vi/${videoId}/default.jpg`,
         medium: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
         high: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
       },
-      duration: pageData.duration || '0:00',
-      viewCount: pageData.viewCount,
+      duration: pageDataTyped.duration || '0:00',
+      viewCount: pageDataTyped.viewCount,
       publishedAt: undefined, // Requires API
       transcript,
     };

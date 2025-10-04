@@ -4,12 +4,13 @@ import { WorkshopDetail } from '@/components/workshops/workshop-detail'
 import Link from 'next/link'
 
 interface WorkshopPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function WorkshopPage({ params }: WorkshopPageProps) {
+  const { id } = await params
   const supabase = await createClient()
 
   const {
@@ -24,7 +25,7 @@ export default async function WorkshopPage({ params }: WorkshopPageProps) {
   const { data: workshop, error } = await supabase
     .from('workshops')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user.id)
     .single()
 

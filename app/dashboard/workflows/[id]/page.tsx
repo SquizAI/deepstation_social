@@ -16,6 +16,7 @@ interface ExecutionResult {
   duration: number;
   nodesExecuted: number;
   nodesFailed: number;
+  nodeStates?: Record<string, any>;
 }
 
 type ViewMode = 'simple' | 'canvas';

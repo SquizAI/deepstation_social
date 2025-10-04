@@ -122,10 +122,13 @@ export default function AIStudioPage() {
       }
 
       const data = await response.json();
+      console.log('[AI Studio] Video generation response:', data);
+      console.log('[AI Studio] Video data:', data.video);
       setGeneratedVideo(data.video);
       setCost(data.cost || 0);
       setGenerationTime(data.generationTime || 0);
     } catch (err) {
+      console.error('[AI Studio] Video generation error:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsGenerating(false);
@@ -547,10 +550,25 @@ export default function AIStudioPage() {
                       poster={generatedVideo.thumbnailUrl}
                       controls
                       className="w-full h-auto"
+                      onLoadedMetadata={(e) => {
+                        const video = e.currentTarget;
+                        console.log('[AI Studio] Video metadata loaded:', {
+                          duration: video.duration,
+                          videoWidth: video.videoWidth,
+                          videoHeight: video.videoHeight,
+                          src: video.src
+                        });
+                      }}
+                      onError={(e) => {
+                        console.error('[AI Studio] Video error:', e);
+                        console.error('[AI Studio] Video src:', generatedVideo.url);
+                      }}
                     />
-                    <div className="p-3 text-xs text-slate-400">
-                      {generatedVideo.resolution} • {generatedVideo.duration}s
-                      {generatedVideo.hasAudio && ' • With Audio'}
+                    <div className="p-3 text-xs text-slate-400 space-y-1">
+                      <div>{generatedVideo.resolution} • {generatedVideo.duration}s{generatedVideo.hasAudio && ' • With Audio'}</div>
+                      <div className="text-[10px] text-slate-500 font-mono break-all">
+                        URL: {generatedVideo.url.substring(0, 80)}...
+                      </div>
                     </div>
                   </div>
                 )}

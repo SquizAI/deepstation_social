@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       output_data: {
         width: img.width,
         height: img.height,
-        seed: img.seed,
+        seed: 'seed' in img ? img.seed : undefined,
         base64: img.base64,
       },
       config: {
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       },
       cost: result.cost / result.images.length,
       generation_time_ms: result.generationTime,
-      safety_ratings: result.safetyRatings || {},
+      safety_ratings: 'safetyRatings' in result ? result.safetyRatings : {},
     }));
 
     const { data: savedGenerations, error: dbError } = await supabase
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       success: true,
       images: result.images,
       prompt: result.prompt,
-      revisedPrompt: result.revisedPrompt,
+      revisedPrompt: 'revisedPrompt' in result ? result.revisedPrompt : undefined,
       cost: result.cost,
       generationTime: result.generationTime,
       generations: savedGenerations,

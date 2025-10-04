@@ -101,7 +101,9 @@ export class Veo3Service {
       const generationTime = Date.now() - startTime;
 
       // Extract video URL from response
-      const videoData = operation.response;
+      const videoData = operation.response as any;
+      console.log('[Veo3] Full operation response:', JSON.stringify(operation, null, 2));
+
       const videoUrl =
         videoData?.generatedVideos?.[0]?.video?.uri ||
         videoData?.uri ||
@@ -109,11 +111,14 @@ export class Veo3Service {
         '';
       const thumbnailUrl = videoData?.thumbnailUri || videoUrl;
 
+      console.log('[Veo3] Extracted URLs:', { videoUrl, thumbnailUrl });
+
       if (!videoUrl) {
+        console.error('[Veo3] No video URL found in response:', videoData);
         throw new Error('No video URL returned from Veo 3');
       }
 
-      return {
+      const result = {
         videoUrl,
         thumbnailUrl,
         duration: options.duration,
@@ -122,6 +127,9 @@ export class Veo3Service {
         cost,
         generationTime,
       };
+
+      console.log('[Veo3] Returning result:', result);
+      return result;
     } catch (error) {
       console.error('Veo 3 generation error:', error);
       throw new Error(

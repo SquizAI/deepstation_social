@@ -156,6 +156,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Event Title</label>
             <Input
+              name="title"
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
               placeholder="Amazing Tech Conference 2025"
@@ -172,6 +173,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
               </span>
             </label>
             <Input
+              name="slug"
               value={formData.slug}
               onChange={(e) => handleInputChange('slug', e.target.value)}
               placeholder="amazing-tech-conference-2025"
@@ -185,6 +187,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
               Short Description
             </label>
             <Textarea
+              name="short_description"
               value={formData.short_description}
               onChange={(e) => handleInputChange('short_description', e.target.value)}
               placeholder="A one-line summary of your event (max 160 characters)"
@@ -202,6 +205,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
               Full Description
             </label>
             <Textarea
+              name="description"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               placeholder="Detailed description of your event, schedule, what attendees can expect..."
@@ -230,6 +234,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Event Date</label>
             <Input
+              name="event_date"
               type="date"
               value={formData.event_date}
               onChange={(e) => handleInputChange('event_date', e.target.value)}
@@ -241,6 +246,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Timezone</label>
             <select
+              name="timezone"
               value={formData.timezone}
               onChange={(e) => handleInputChange('timezone', e.target.value)}
               className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
@@ -259,6 +265,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Start Time</label>
             <Input
+              name="start_time"
               type="time"
               value={formData.start_time}
               onChange={(e) => handleInputChange('start_time', e.target.value)}
@@ -270,6 +277,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">End Time</label>
             <Input
+              name="end_time"
               type="time"
               value={formData.end_time}
               onChange={(e) => handleInputChange('end_time', e.target.value)}
@@ -328,6 +336,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
                 Meeting URL
               </label>
               <Input
+                name="meeting_url"
                 type="url"
                 value={formData.meeting_url}
                 onChange={(e) => handleInputChange('meeting_url', e.target.value)}
@@ -344,6 +353,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
                   Venue Name
                 </label>
                 <Input
+                  name="location_name"
                   value={formData.location_name}
                   onChange={(e) => handleInputChange('location_name', e.target.value)}
                   placeholder="San Francisco Convention Center"
@@ -356,6 +366,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
                   Street Address
                 </label>
                 <Input
+                  name="location_address"
                   value={formData.location_address}
                   onChange={(e) => handleInputChange('location_address', e.target.value)}
                   placeholder="123 Main Street"
@@ -367,6 +378,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">City</label>
                   <Input
+                    name="location_city"
                     value={formData.location_city}
                     onChange={(e) => handleInputChange('location_city', e.target.value)}
                     placeholder="San Francisco"
@@ -379,6 +391,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
                     State/Province
                   </label>
                   <Input
+                    name="location_state"
                     value={formData.location_state}
                     onChange={(e) => handleInputChange('location_state', e.target.value)}
                     placeholder="CA"
@@ -389,6 +402,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Country</label>
                   <Input
+                    name="location_country"
                     value={formData.location_country}
                     onChange={(e) => handleInputChange('location_country', e.target.value)}
                     placeholder="USA"
@@ -410,6 +424,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
               Maximum Capacity
             </label>
             <Input
+              name="max_capacity"
               type="number"
               value={formData.max_capacity || ''}
               onChange={(e) => handleInputChange('max_capacity', parseInt(e.target.value) || null)}
@@ -648,6 +663,7 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
               Meta Description
             </label>
             <Textarea
+              name="meta_description"
               value={formData.meta_description}
               onChange={(e) => handleInputChange('meta_description', e.target.value)}
               placeholder="Description for search engines and social media previews"
