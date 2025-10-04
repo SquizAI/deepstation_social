@@ -70,8 +70,8 @@ export class Veo3Service {
       // Enhance prompt with style and technical details
       const enhancedPrompt = this.enhancePrompt(options.prompt, options);
 
-      // Start video generation using Veo 3 Fast (veo-3-fast-001)
-      const model = options.withAudio ? 'veo-3-fast-001' : 'veo-3.0-generate-001';
+      // Start video generation using Veo 3 (always includes audio)
+      const model = 'veo-3.0-fast-generate-001'; // Fast variant
 
       let operation = await this.client.models.generateVideos({
         model,
@@ -224,11 +224,11 @@ export class Veo3Service {
 
   /**
    * Calculate cost based on duration
-   * Veo 3 Fast pricing: $0.40 per second with audio
-   * Veo 3 pricing: $0.35 per second without audio
+   * Veo 3 Fast pricing: $0.40 per second (audio always included)
    */
   private calculateCost(duration: number, withAudio: boolean = false): number {
-    return withAudio ? duration * 0.40 : duration * 0.35;
+    // Veo 3 always generates with audio, so always $0.40/second
+    return duration * 0.40;
   }
 
   /**

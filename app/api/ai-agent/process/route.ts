@@ -1,22 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { createClient } from '@/lib/supabase/server'
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
 })
 
+// Map formType to settings field
+const FORM_TYPE_TO_SETTING: Record<string, string> = {
+  event: 'event_assistant_model',
+  post: 'post_generator_model',
+  speaker: 'speaker_assistant_model',
+  generic: 'voice_assistant_model',
+}
+
 const SYSTEM_PROMPTS: Record<string, string> = {
-  event: `You are an AI assistant helping users create events through natural conversation.
+  event: `You're a quick event assistant. Keep responses under 10 words. Ask ONE question at a time.
 
-Ask friendly questions to gather event details:
-- Event title and description
-- Date and time (start/end)
-- Location (online/in-person/hybrid) with venue or meeting URL
-- Capacity and ticket information
-- Tags and category
-- Speaker information if applicable
+RULES:
+- Be super concise
+- One question per response
+- No pleasantries after first message
+- Extract data immediately
 
-After each response, output a JSON block with extracted data in this exact format:
+DATA TO GATHER:
+title, description, event_date (YYYY-MM-DD), start_time (HH:MM), end_time, location_type (online/in-person/hybrid), venue_name, meeting_url, capacity, event_type, tags
+
+After EVERY response, output extracted data:
 <formData>
 {
   "title": "value or null",
@@ -33,7 +43,7 @@ After each response, output a JSON block with extracted data in this exact forma
 }
 </formData>
 
-If the user mentions a company, venue, or person you don't have details about, use the research_topic tool to find information.`,
+Use research_topic for venues/companies.`,
 
   post: `You are an AI assistant helping users create social media posts through natural conversation.
 
@@ -107,12 +117,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get user settings for AI model
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    let model = 'claude-sonnet-4-5-20250929' // Default
+    let maxTokens = 150
+
+    if (user) {
+      const { data: settings } = await supabase.rpc('get_or_create_user_ai_settings', {
+        p_user_id: user.id,
+      })
+
+      if (settings) {
+        const settingField = FORM_TYPE_TO_SETTING[formType] || 'voice_assistant_model'
+        model = settings[settingField] || model
+        maxTokens = settings.max_tokens || maxTokens
+      }
+    }
+
     const systemPrompt = SYSTEM_PROMPTS[formType] || SYSTEM_PROMPTS.generic
 
-    // Call Claude
+    // Call Claude with user's preferred model
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
-      max_tokens: 1024,
+      model,
+      max_tokens: maxTokens,
       system: systemPrompt,
       messages: conversation,
       tools: [RESEARCH_TOOL],
@@ -137,8 +168,8 @@ export async function POST(request: NextRequest) {
 
         // Continue conversation with tool result
         const continuedResponse = await anthropic.messages.create({
-          model: 'claude-3-5-haiku-20241022',
-          max_tokens: 1024,
+          model,
+          max_tokens: maxTokens,
           system: systemPrompt,
           messages: [
             ...conversation,

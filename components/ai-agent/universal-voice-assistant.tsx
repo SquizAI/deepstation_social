@@ -28,6 +28,11 @@ export function UniversalVoiceAssistant({
 
   const startRecording = async () => {
     try {
+      // Show initial greeting on first interaction
+      if (conversation.length === 0) {
+        setAiResponse("What's the event called?")
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
 
       // Set up audio visualization
@@ -123,14 +128,6 @@ export function UniversalVoiceAssistant({
       // Step 3: Update form
       if (extractedData) {
         onFormUpdate(extractedData)
-      }
-
-      // Speak the response
-      if (response && 'speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(response)
-        utterance.rate = 1.1
-        utterance.pitch = 1
-        window.speechSynthesis.speak(utterance)
       }
 
     } catch (error) {

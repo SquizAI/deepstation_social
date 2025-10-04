@@ -421,11 +421,23 @@ function WorkflowBuilderContent() {
     });
   };
 
+  const [isNodePaletteOpen, setIsNodePaletteOpen] = useState(true);
+
   return (
-    <div className="fixed inset-0 z-[100] bg-[#0a0513] flex flex-col">
+    <div className="fixed inset-0 z-[9999] bg-[#0a0513] flex flex-col">
       {/* Top Bar */}
       <div className="bg-gradient-to-r from-[#201033] via-[#15092b] to-[#0a0513] border-b border-white/10 p-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            onClick={() => setIsNodePaletteOpen(!isNodePaletteOpen)}
+            className="text-slate-400 hover:text-white"
+            title="Toggle node palette"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </Button>
           <Button
             variant="ghost"
             onClick={() => router.push('/dashboard/workflows')}
@@ -492,7 +504,9 @@ function WorkflowBuilderContent() {
 
       <div className="flex-1 flex">
         {/* Node Palette */}
-        <div className="w-80 bg-gradient-to-b from-[#201033] via-[#15092b] to-[#0a0513] border-r border-white/10 overflow-y-auto">
+        <div className={`${isNodePaletteOpen ? 'w-80' : 'w-0'} transition-all duration-300 bg-gradient-to-b from-[#201033] via-[#15092b] to-[#0a0513] border-r border-white/10 overflow-y-auto overflow-x-hidden`}>
+          {isNodePaletteOpen && (
+            <>
           <div className="p-5 border-b border-white/10">
             <h3 className="text-white font-bold text-lg flex items-center gap-2">
               <svg className="h-6 w-6 text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -578,6 +592,8 @@ function WorkflowBuilderContent() {
                 {executionState.status}
               </div>
             </div>
+          )}
+            </>
           )}
         </div>
 
