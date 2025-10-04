@@ -3,7 +3,6 @@ CREATE TABLE IF NOT EXISTS oauth_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   platform TEXT NOT NULL CHECK (platform IN ('linkedin', 'instagram', 'twitter', 'discord')),
-  provider_user_id TEXT,
   access_token TEXT NOT NULL,
   refresh_token TEXT,
   expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -11,6 +10,17 @@ CREATE TABLE IF NOT EXISTS oauth_tokens (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   UNIQUE(user_id, platform)
 );
+
+-- Add provider_user_id column if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'oauth_tokens' AND column_name = 'provider_user_id'
+  ) THEN
+    ALTER TABLE oauth_tokens ADD COLUMN provider_user_id TEXT;
+  END IF;
+END $$;
 
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_oauth_tokens_user_id ON oauth_tokens(user_id);

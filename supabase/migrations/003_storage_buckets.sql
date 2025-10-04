@@ -34,8 +34,8 @@ ON CONFLICT (id) DO NOTHING;
 -- STORAGE POLICIES - POST IMAGES
 -- =============================================
 
--- Enable RLS on storage.objects (if not already enabled)
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- RLS is already enabled on storage.objects by default in Supabase
+-- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can upload images to their own folder
 -- Folder structure: post-images/{user_id}/{filename}
@@ -167,7 +167,7 @@ CREATE INDEX IF NOT EXISTS idx_storage_objects_name
 
 -- Composite index for user-specific queries
 CREATE INDEX IF NOT EXISTS idx_storage_objects_bucket_user
-  ON storage.objects(bucket_id, (storage.foldername(name))[1]);
+  ON storage.objects(bucket_id, owner);
 
 COMMIT;
 

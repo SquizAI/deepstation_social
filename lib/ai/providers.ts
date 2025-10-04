@@ -73,7 +73,7 @@ async function generateWithGemini(
   messages: AIMessage[],
   options: AIGenerationOptions = {}
 ): Promise<AIResponse> {
-  const model = options.model || 'gemini-2.0-flash-exp';
+  const model = options.model || 'gemini-2.5-flash';
   const apiKey = process.env.GEMINI_API_KEY;
 
   // Build the prompt from messages
@@ -133,7 +133,7 @@ async function generateWithAnthropic(
   messages: AIMessage[],
   options: AIGenerationOptions = {}
 ): Promise<AIResponse> {
-  const model = options.model || 'claude-3-5-sonnet-20241022';
+  const model = options.model || 'claude-sonnet-4-20250514';
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
   // Extract system message if present
@@ -283,7 +283,7 @@ export function isProviderAvailable(provider: AIProvider): boolean {
 }
 
 /**
- * Get model recommendations for each provider
+ * Get model recommendations for each provider (Updated Jan 2025)
  */
 export const RECOMMENDED_MODELS = {
   openai: {
@@ -292,13 +292,13 @@ export const RECOMMENDED_MODELS = {
     powerful: 'gpt-4o',
   },
   gemini: {
-    fast: 'gemini-1.5-flash',
-    balanced: 'gemini-2.0-flash-exp',
-    powerful: 'gemini-2.0-flash-thinking-exp-01-21',
+    fast: 'gemini-2.0-flash-001',
+    balanced: 'gemini-2.5-flash',
+    powerful: 'gemini-2.5-pro',
   },
   anthropic: {
     fast: 'claude-3-5-haiku-20241022',
-    balanced: 'claude-3-5-sonnet-20241022',
-    powerful: 'claude-3-7-sonnet-20250219',
+    balanced: 'claude-sonnet-4-20250514',
+    powerful: 'claude-opus-4-20250514',
   },
 } as const;

@@ -1,14 +1,94 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 249, 250, 251;
-  --background-end-rgb: 255, 255, 255;
+@theme {
+  --color-primary: #201033;
+  --color-secondary: #15092b;
+
+  --color-indigo-50: oklch(98% 0.01 270);
+  --color-indigo-100: oklch(95% 0.03 265);
+  --color-indigo-200: oklch(88% 0.06 265);
+  --color-indigo-300: oklch(80% 0.12 265);
+  --color-indigo-400: oklch(68% 0.16 270);
+  --color-indigo-500: oklch(58% 0.18 270);
+  --color-indigo-600: oklch(50% 0.16 270);
+  --color-indigo-700: oklch(42% 0.14 270);
+  --color-indigo-800: oklch(34% 0.10 270);
+  --color-indigo-900: oklch(22% 0.08 270);
+
+  --color-purple-50: oklch(98% 0.01 300);
+  --color-purple-100: oklch(95% 0.03 300);
+  --color-purple-200: oklch(88% 0.06 300);
+  --color-purple-300: oklch(80% 0.12 300);
+  --color-purple-400: oklch(68% 0.18 300);
+  --color-purple-500: oklch(58% 0.20 300);
+  --color-purple-600: oklch(50% 0.18 300);
+  --color-purple-700: oklch(42% 0.14 300);
+  --color-purple-800: oklch(34% 0.10 300);
+  --color-purple-900: oklch(22% 0.08 300);
+
+  --color-fuchsia-50: oklch(98% 0.01 320);
+  --color-fuchsia-100: oklch(95% 0.03 320);
+  --color-fuchsia-200: oklch(88% 0.08 320);
+  --color-fuchsia-300: oklch(80% 0.15 320);
+  --color-fuchsia-400: oklch(68% 0.20 320);
+  --color-fuchsia-500: oklch(58% 0.22 320);
+  --color-fuchsia-600: oklch(50% 0.20 320);
+  --color-fuchsia-700: oklch(42% 0.16 320);
+  --color-fuchsia-800: oklch(34% 0.12 320);
+  --color-fuchsia-900: oklch(22% 0.08 320);
+
+  --color-cyan-50: oklch(98% 0.01 195);
+  --color-cyan-100: oklch(95% 0.03 195);
+  --color-cyan-200: oklch(88% 0.08 195);
+  --color-cyan-300: oklch(80% 0.14 195);
+  --color-cyan-400: oklch(68% 0.18 195);
+  --color-cyan-500: oklch(58% 0.20 195);
+  --color-cyan-600: oklch(50% 0.18 195);
+  --color-cyan-700: oklch(42% 0.14 195);
+  --color-cyan-800: oklch(34% 0.10 195);
+  --color-cyan-900: oklch(22% 0.06 195);
+
+  --color-pink-50: oklch(98% 0.01 350);
+  --color-pink-100: oklch(95% 0.03 350);
+  --color-pink-200: oklch(88% 0.06 350);
+  --color-pink-300: oklch(80% 0.12 350);
+  --color-pink-400: oklch(68% 0.18 350);
+  --color-pink-500: oklch(58% 0.20 350);
+  --color-pink-600: oklch(50% 0.18 350);
+  --color-pink-700: oklch(42% 0.14 350);
+  --color-pink-800: oklch(34% 0.10 350);
+  --color-pink-900: oklch(22% 0.08 350);
+
+  --color-slate-50: oklch(98% 0 0);
+  --color-slate-100: oklch(96% 0 0);
+  --color-slate-200: oklch(90% 0 0);
+  --color-slate-300: oklch(84% 0 0);
+  --color-slate-400: oklch(64% 0 0);
+  --color-slate-500: oklch(50% 0 0);
+  --color-slate-600: oklch(40% 0 0);
+  --color-slate-700: oklch(32% 0 0);
+  --color-slate-800: oklch(24% 0 0);
+  --color-slate-900: oklch(16% 0 0);
+
+  --color-white: oklch(100% 0 0);
+  --color-black: oklch(0% 0 0);
+
+  --blur-sm: 4px;
+  --blur-DEFAULT: 8px;
+  --blur-md: 12px;
+  --blur-lg: 16px;
+  --blur-xl: 24px;
+  --blur-2xl: 40px;
+  --blur-3xl: 64px;
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
 }

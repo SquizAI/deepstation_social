@@ -134,12 +134,13 @@ SELECT
 FROM (
   SELECT
     sp.user_id,
-    unnest(sp.platforms) AS platform,
+    platform_name AS platform,
     pr.status,
     pr.metrics,
     pr.posted_at
   FROM scheduled_posts sp
-  LEFT JOIN post_results pr ON sp.id = pr.post_id AND pr.platform = unnest(sp.platforms)
+  CROSS JOIN unnest(sp.platforms) AS platform_name
+  LEFT JOIN post_results pr ON sp.id = pr.post_id AND pr.platform = platform_name
   WHERE sp.status IN ('published', 'failed')
 ) platform_posts
 GROUP BY user_id, platform;
