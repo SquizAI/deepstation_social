@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import ReactFlow, {
   Node,
@@ -21,6 +21,12 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Button } from '@/components/ui/button';
+import { WorkflowBuilderModal } from '@/components/workflow-builder-modal';
+import { NodeConfigPanel } from '@/components/node-config-panel';
+import { WorkflowTemplatesModal, WorkflowTemplate } from '@/components/workflow-templates';
+import { WorkflowValidationPanel } from '@/components/workflow-validation-panel';
+import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 interface WorkflowNode {
   id: string;
@@ -112,6 +118,169 @@ const NODE_TEMPLATES = Object.values(NODE_CATEGORIES).reduce((acc, category) => 
   return { ...acc, ...category.nodes };
 }, {} as Record<string, any>);
 
+// Helper function to generate human-readable preview of node configuration
+function getNodePreview(nodeData: any): string {
+  const config = nodeData.config || {};
+
+  switch (nodeData.nodeType) {
+    case 'trigger':
+      if (config.triggerType === 'manual') {
+        return '▶ Click "Run Workflow" to start';
+      }
+      if (config.triggerType === 'scheduled') {
+        const schedule = config.schedule || '0 9 * * *';
+        return `⏰ Scheduled: ${formatCronSchedule(schedule)}`;
+      }
+      if (config.triggerType === 'webhook') {
+        return '🔗 Triggered by external webhook';
+      }
+      return 'Trigger not configured';
+
+    case 'claude-agent':
+      const agentName = config.agentName === 'custom'
+        ? config.customAgentName || 'Custom Agent'
+        : formatAgentName(config.agentName || 'content-optimizer');
+      const operation = formatOperation(config.operation || 'optimize-single');
+      return `🤖 ${agentName} - ${operation}`;
+
+    case 'ai':
+      const aiType = config.aiType === 'text-generation' ? 'Text' :
+                     config.aiType === 'image-generation' ? 'Image' :
+                     config.aiType === 'video-generation' ? 'Video' : 'AI';
+      const model = config.model || 'No model selected';
+      return `✨ ${aiType} - ${formatModelName(model)}`;
+
+    case 'action':
+      const actionType = config.actionType || 'post';
+      const platform = config.platform || 'linkedin';
+      if (actionType === 'post') {
+        return `📤 Post to ${formatPlatformName(platform)}`;
+      }
+      if (actionType === 'save') {
+        return '💾 Save as draft';
+      }
+      if (actionType === 'schedule') {
+        return `📅 Schedule for ${formatPlatformName(platform)}`;
+      }
+      if (actionType === 'send') {
+        return `📧 Send ${config.notificationType || 'notification'}`;
+      }
+      return 'Action not configured';
+
+    case 'condition':
+      const field = config.field || 'field';
+      const operator = config.operator || 'equals';
+      const value = config.value || 'value';
+      return `🔀 If ${field} ${operator} ${value}`;
+
+    case 'transform':
+      const transformType = config.transformType || 'map';
+      return `🔄 ${transformType.charAt(0).toUpperCase() + transformType.slice(1)} data`;
+
+    default:
+      return nodeData.nodeKey || 'Configure this node';
+  }
+}
+
+// Helper function to check if a node is properly configured
+function isNodeConfigured(nodeData: any): boolean {
+  const config = nodeData.config || {};
+
+  switch (nodeData.nodeType) {
+    case 'trigger':
+      if (!config.triggerType) return false;
+      if (config.triggerType === 'scheduled' && !config.schedule) return false;
+      return true;
+
+    case 'claude-agent':
+      if (!config.agentName) return false;
+      if (config.agentName === 'custom' && !config.customAgentName) return false;
+      if (!config.operation) return false;
+      return true;
+
+    case 'ai':
+      if (!config.aiType || !config.model) return false;
+      if (!config.prompt || config.prompt.trim().length === 0) return false;
+      return true;
+
+    case 'action':
+      if (!config.actionType) return false;
+      if ((config.actionType === 'post' || config.actionType === 'schedule') && !config.platform) return false;
+      if (config.actionType === 'schedule' && !config.scheduledTime) return false;
+      if (config.actionType === 'send' && (!config.notificationType || !config.recipient)) return false;
+      return true;
+
+    case 'condition':
+      return !!(config.field && config.operator && config.value);
+
+    case 'transform':
+      return !!(config.transformType && config.mapping);
+
+    default:
+      return true; // Unknown types are considered configured
+  }
+}
+
+// Format helper functions
+function formatCronSchedule(cron: string): string {
+  const schedules: Record<string, string> = {
+    '0 9 * * *': 'Every day at 9am',
+    '0 */6 * * *': 'Every 6 hours',
+    '0 * * * *': 'Every hour',
+    '*/15 * * * *': 'Every 15 minutes',
+    '0 0 * * 0': 'Every Sunday at midnight',
+    '0 12 * * 1-5': 'Weekdays at noon',
+  };
+  return schedules[cron] || cron;
+}
+
+function formatAgentName(name: string): string {
+  return name.split('-').map(word =>
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
+}
+
+function formatOperation(op: string): string {
+  const operations: Record<string, string> = {
+    'optimize-single': 'Optimize Single',
+    'optimize-batch': 'Optimize Batch',
+    'generate': 'Generate Content',
+    'analyze': 'Analyze Content',
+    'transform': 'Transform Data',
+  };
+  return operations[op] || op;
+}
+
+function formatModelName(model: string): string {
+  const names: Record<string, string> = {
+    'gpt-4o': 'GPT-4o',
+    'gpt-4o-mini': 'GPT-4o Mini',
+    'claude-3.7-sonnet': 'Claude 3.7 Sonnet',
+    'claude-3.5-haiku': 'Claude 3.5 Haiku',
+    'gemini-2.0-flash': 'Gemini 2.0 Flash',
+    'llama-3.3-70b': 'Llama 3.3 70B',
+    'dall-e-3': 'DALL-E 3',
+    'stable-diffusion': 'Stable Diffusion',
+    'midjourney': 'Midjourney',
+    'runway': 'Runway Gen-3',
+    'pika': 'Pika Labs',
+    'luma': 'Luma Dream Machine',
+  };
+  return names[model] || model;
+}
+
+function formatPlatformName(platform: string): string {
+  const names: Record<string, string> = {
+    'linkedin': 'LinkedIn',
+    'twitter': 'X (Twitter)',
+    'instagram': 'Instagram',
+    'facebook': 'Facebook',
+    'discord': 'Discord',
+    'all': 'All Platforms',
+  };
+  return names[platform] || platform;
+}
+
 function CustomNode({ data, id, selected }: any) {
   const getNodeColor = (nodeType: string) => {
     const template = Object.values(NODE_TEMPLATES).find(t => t.nodeType === nodeType);
@@ -126,6 +295,8 @@ function CustomNode({ data, id, selected }: any) {
       default: return 'border-white/10';
     }
   };
+
+  const [showMenu, setShowMenu] = React.useState(false);
 
   return (
     <div className={`min-w-[280px] group relative ${selected ? 'ring-2 ring-fuchsia-500' : ''}`}>
@@ -147,19 +318,69 @@ function CustomNode({ data, id, selected }: any) {
 
       <div className={`bg-gradient-to-r ${getNodeColor(data.nodeType)} p-0.5 rounded-xl ${getStatusColor(data.status)} ${data.status === 'running' ? 'animate-pulse shadow-lg' : ''}`}>
         <div className="bg-[#1a0f2e] rounded-xl p-4 relative">
-          {/* Delete Button - appears on hover */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              data.onDelete?.(id);
-            }}
-            className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
-            title="Delete node"
-          >
-            <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {/* Three-Dot Menu Button - Always visible */}
+          <div className="absolute -top-2 -right-2 z-10">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(!showMenu);
+              }}
+              className="h-7 w-7 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg border border-white/20"
+              title="Node actions"
+            >
+              <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="5" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="12" cy="19" r="2" />
+              </svg>
+            </button>
+
+            {/* Dropdown Menu */}
+            {showMenu && (
+              <div className="absolute right-0 top-8 w-40 bg-[#1a0f2e] border border-white/20 rounded-lg shadow-2xl overflow-hidden">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(false);
+                    // Trigger edit - clicking the node will open inspector
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 flex items-center gap-2"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(false);
+                    data.onDuplicate?.(id);
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10 flex items-center gap-2"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Duplicate
+                </button>
+                <div className="border-t border-white/10"></div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(false);
+                    data.onDelete?.(id);
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/20 flex items-center gap-2"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Status Indicator */}
           {data.status && data.status !== 'idle' && (
@@ -182,10 +403,39 @@ function CustomNode({ data, id, selected }: any) {
 
           {/* Header */}
           <div className="flex items-center gap-3 mb-3">
-            <div className={`bg-gradient-to-r ${getNodeColor(data.nodeType)} p-2.5 rounded-xl text-white flex-shrink-0 shadow-lg`}>
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+            <div className={`bg-gradient-to-r ${getNodeColor(data.nodeType)} p-2.5 rounded-xl text-white flex-shrink-0 shadow-lg relative`}>
+              {/* Node Type Icon */}
+              {data.nodeType === 'trigger' && (
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              )}
+              {(data.nodeType === 'claude-agent' || data.nodeType === 'ai') && (
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              )}
+              {data.nodeType === 'action' && (
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                </svg>
+              )}
+              {(data.nodeType === 'condition' || data.nodeType === 'transform') && (
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                </svg>
+              )}
+
+              {/* Platform Badge - Shows on action nodes */}
+              {data.nodeType === 'action' && data.config?.platform && (
+                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-white flex items-center justify-center text-[10px] font-bold border border-white/20">
+                  {data.config.platform === 'linkedin' && '💼'}
+                  {data.config.platform === 'twitter' && '🐦'}
+                  {data.config.platform === 'instagram' && '📸'}
+                  {data.config.platform === 'discord' && '💬'}
+                  {data.config.platform === 'facebook' && '👥'}
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-white font-bold text-base truncate">{data.nodeKey || 'Unnamed'}</div>
@@ -193,17 +443,20 @@ function CustomNode({ data, id, selected }: any) {
             </div>
           </div>
 
-          {/* Config Preview */}
-          {data.config && Object.keys(data.config).length > 0 && (
-            <div className="bg-white/5 rounded-lg p-3 space-y-1.5 text-xs border border-white/5">
-              {Object.entries(data.config).slice(0, 2).map(([key, value]: [string, any]) => (
-                <div key={key} className="flex justify-between gap-2">
-                  <span className="text-slate-400 truncate font-medium">{key}:</span>
-                  <span className="text-slate-200 truncate font-mono font-semibold">{String(value).substring(0, 20)}</span>
-                </div>
-              ))}
+          {/* Config Preview - Smart preview based on node type */}
+          <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+            <div className="text-xs text-slate-300 font-medium">
+              {getNodePreview(data)}
             </div>
-          )}
+            {!isNodeConfigured(data) && (
+              <div className="flex items-center gap-1.5 mt-2 text-xs text-yellow-400">
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>Click to configure</span>
+              </div>
+            )}
+          </div>
 
           {/* Output Preview */}
           {data.output && (
@@ -233,6 +486,7 @@ function WorkflowBuilderContent() {
   const router = useRouter();
   const workflowId = params.id as string;
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showNodeEditor, setShowNodeEditor] = useState(false);
   const [executionState, setExecutionState] = useState<ExecutionState>({
     status: 'idle',
@@ -240,6 +494,11 @@ function WorkflowBuilderContent() {
   });
   const [workflowName, setWorkflowName] = useState('Untitled Workflow');
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set(['triggers', 'ai'])); // Default open
+
+  // Phase 1 feature states
+  const [showTemplatesModal, setShowTemplatesModal] = useState(false);
+  const [showValidationPanel, setShowValidationPanel] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
 
   const nodeTypes: NodeTypes = {
     custom: CustomNode,
@@ -266,6 +525,7 @@ function WorkflowBuilderContent() {
               config: node.config,
               status: 'idle',
               onDelete: deleteNode,
+              onDuplicate: duplicateNode,
             },
           }));
           setNodes(flowNodes);
@@ -288,14 +548,37 @@ function WorkflowBuilderContent() {
       });
   }, [workflowId]);
 
+  const getEdgeLabel = (sourceNode: Node, targetNode: Node) => {
+    const sourceType = sourceNode.data.nodeType;
+    const targetType = targetNode.data.nodeType;
+
+    // Determine what data flows between these nodes
+    if (sourceType === 'trigger') return '⚡ Start';
+    if (sourceType === 'ai' && sourceNode.data.config?.aiType === 'text-generation') return '📝 Text';
+    if (sourceType === 'ai' && sourceNode.data.config?.aiType === 'image-generation') return '🖼️ Image';
+    if (sourceType === 'ai' && sourceNode.data.config?.aiType === 'video-generation') return '🎥 Video';
+    if (sourceType === 'claude-agent') return '🤖 Optimized Content';
+    if (sourceType === 'transform') return '🔄 Transformed Data';
+    if (sourceType === 'condition') return '✓ Passed';
+    return '→';
+  };
+
   const onConnect = useCallback(
     (params: Connection) => {
+      const sourceNode = nodes.find(n => n.id === params.source);
+      const targetNode = nodes.find(n => n.id === params.target);
+
       setEdges((eds) =>
         addEdge(
           {
             ...params,
             type: 'smoothstep',
             animated: true,
+            label: sourceNode && targetNode ? getEdgeLabel(sourceNode, targetNode) : undefined,
+            labelStyle: { fill: '#e9d5ff', fontWeight: 700, fontSize: 12 },
+            labelBgStyle: { fill: '#1a0f2e', fillOpacity: 0.9 },
+            labelBgPadding: [8, 4],
+            labelBgBorderRadius: 6,
             style: { stroke: '#a855f7', strokeWidth: 2 },
             markerEnd: { type: MarkerType.ArrowClosed, color: '#a855f7' },
           },
@@ -303,11 +586,12 @@ function WorkflowBuilderContent() {
         )
       );
     },
-    [setEdges]
+    [setEdges, nodes]
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
+    setSelectedNodeId(node.id);
     setShowNodeEditor(true);
   }, []);
 
@@ -323,6 +607,7 @@ function WorkflowBuilderContent() {
         config: { ...template.config },
         status: 'idle',
         onDelete: deleteNode,
+        onDuplicate: duplicateNode,
       },
     };
     setNodes((nds) => [...nds, newNode]);
@@ -342,6 +627,27 @@ function WorkflowBuilderContent() {
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
     setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
     setShowNodeEditor(false);
+  };
+
+  const duplicateNode = (nodeId: string) => {
+    const nodeToDuplicate = nodes.find((n) => n.id === nodeId);
+    if (!nodeToDuplicate) return;
+
+    const newNode: Node = {
+      ...nodeToDuplicate,
+      id: `node-${Date.now()}`,
+      position: {
+        x: nodeToDuplicate.position.x + 50,
+        y: nodeToDuplicate.position.y + 50,
+      },
+      data: {
+        ...nodeToDuplicate.data,
+        nodeKey: `${nodeToDuplicate.data.nodeType}_${Date.now()}`,
+        onDelete: deleteNode,
+        onDuplicate: duplicateNode,
+      },
+    };
+    setNodes((nds) => [...nds, newNode]);
   };
 
   const toggleCategory = (categoryKey: string) => {
@@ -422,9 +728,19 @@ function WorkflowBuilderContent() {
   };
 
   const [isNodePaletteOpen, setIsNodePaletteOpen] = useState(true);
+  const [isBuilderOpen, setIsBuilderOpen] = useState(true);
+
+  // Close the builder when navigating away
+  const handleClose = () => {
+    setIsBuilderOpen(false);
+    setTimeout(() => {
+      router.push('/dashboard/workflows');
+    }, 100);
+  };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-[#0a0513] flex flex-col">
+    <WorkflowBuilderModal isOpen={isBuilderOpen}>
+      <div className="fixed inset-0 z-[9999] bg-[#0a0513] flex flex-col">
       {/* Top Bar */}
       <div className="bg-gradient-to-r from-[#201033] via-[#15092b] to-[#0a0513] border-b border-white/10 p-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -440,7 +756,7 @@ function WorkflowBuilderContent() {
           </Button>
           <Button
             variant="ghost"
-            onClick={() => router.push('/dashboard/workflows')}
+            onClick={handleClose}
             className="text-slate-400 hover:text-white"
           >
             <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -490,7 +806,7 @@ function WorkflowBuilderContent() {
             )}
           </Button>
           <Button
-            onClick={() => router.push('/dashboard/workflows')}
+            onClick={handleClose}
             variant="ghost"
             className="text-slate-400 hover:text-white"
             title="Close workflow builder"
@@ -631,91 +947,16 @@ function WorkflowBuilderContent() {
 
         {/* Node Inspector */}
         {showNodeEditor && selectedNode && (
-          <div className="w-96 bg-gradient-to-b from-[#201033] via-[#15092b] to-[#0a0513] border-l border-white/10 p-6 overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-white font-semibold text-lg">Node Properties</h3>
-              <Button
-                variant="ghost"
-                onClick={() => setShowNodeEditor(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-slate-300 text-sm mb-2 block">Node Key</label>
-                <input
-                  type="text"
-                  value={selectedNode.data.nodeKey}
-                  onChange={(e) => updateNode(selectedNode.id, { nodeKey: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
-                />
-              </div>
-
-              <div>
-                <label className="text-slate-300 text-sm mb-2 block">Type</label>
-                <div className="text-white capitalize bg-white/5 px-3 py-2 rounded-lg">
-                  {selectedNode.data.nodeType}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-slate-300 text-sm mb-2 block">Configuration</label>
-                <textarea
-                  value={JSON.stringify(selectedNode.data.config, null, 2)}
-                  onChange={(e) => {
-                    try {
-                      const config = JSON.parse(e.target.value);
-                      updateNode(selectedNode.id, { config });
-                    } catch (err) {
-                      // Invalid JSON, ignore
-                    }
-                  }}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white font-mono text-sm"
-                  rows={10}
-                />
-              </div>
-
-              {selectedNode.data.output && (
-                <div>
-                  <label className="text-slate-300 text-sm mb-2 block">Output</label>
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-                    <pre className="text-green-300 text-xs font-mono whitespace-pre-wrap">
-                      {JSON.stringify(selectedNode.data.output, null, 2)}
-                    </pre>
-                  </div>
-                </div>
-              )}
-
-              {selectedNode.data.error && (
-                <div>
-                  <label className="text-slate-300 text-sm mb-2 block">Error</label>
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                    <pre className="text-red-300 text-xs whitespace-pre-wrap">
-                      {selectedNode.data.error}
-                    </pre>
-                  </div>
-                </div>
-              )}
-
-              <Button
-                onClick={() => deleteNode(selectedNode.id)}
-                className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30"
-              >
-                <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                Delete Node
-              </Button>
-            </div>
-          </div>
+          <NodeConfigPanel
+            node={selectedNode}
+            onUpdate={updateNode}
+            onClose={() => setShowNodeEditor(false)}
+            onDelete={deleteNode}
+          />
         )}
       </div>
     </div>
+    </WorkflowBuilderModal>
   );
 }
 

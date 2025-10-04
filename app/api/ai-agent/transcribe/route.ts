@@ -19,6 +19,17 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await audioFile.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
+    // Log audio details for debugging
+    console.log(`Audio received: ${buffer.length} bytes, type: ${audioFile.type}`)
+
+    // Check if buffer is empty
+    if (buffer.length === 0) {
+      return NextResponse.json(
+        { error: 'Audio file is empty', transcript: '' },
+        { status: 200 }
+      )
+    }
+
     // Transcribe with Deepgram Nova-3
     const { result, error } = await deepgram.listen.prerecorded.transcribeFile(
       buffer,

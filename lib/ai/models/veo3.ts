@@ -102,7 +102,11 @@ export class Veo3Service {
 
       // Extract video URL from response
       const videoData = operation.response;
-      const videoUrl = videoData?.uri || videoData?.videoUri || '';
+      const videoUrl =
+        videoData?.generatedVideos?.[0]?.video?.uri ||
+        videoData?.uri ||
+        videoData?.videoUri ||
+        '';
       const thumbnailUrl = videoData?.thumbnailUri || videoUrl;
 
       if (!videoUrl) {

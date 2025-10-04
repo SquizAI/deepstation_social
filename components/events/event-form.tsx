@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -46,6 +46,18 @@ export function EventForm({ initialData, onSubmit, isLoading = false }: EventFor
   const [currentTag, setCurrentTag] = useState('')
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null)
   const [ogImageFile, setOgImageFile] = useState<File | null>(null)
+
+  // Sync form data when AI updates initialData
+  useEffect(() => {
+    if (initialData) {
+      setFormData(prev => ({
+        ...prev,
+        ...Object.fromEntries(
+          Object.entries(initialData).filter(([_, v]) => v !== null && v !== undefined)
+        )
+      }))
+    }
+  }, [initialData])
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))

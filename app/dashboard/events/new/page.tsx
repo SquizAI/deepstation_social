@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { EventForm } from '@/components/events/event-form'
-import { InteractiveVoiceModal } from '@/components/ai-agent/interactive-voice-modal'
+import { ContinuousVoiceAssistant } from '@/components/ai-agent/continuous-voice-assistant'
 import { createClient } from '@/lib/supabase/client'
 import type { Event } from '@/lib/types/event'
 
@@ -12,8 +12,34 @@ export default function NewEventPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState<Partial<Event>>({})
-  const [showAIModal, setShowAIModal] = useState(false)
+  const [aiActive, setAiActive] = useState(false)
+  const [currentField, setCurrentField] = useState<string | null>(null)
   const formRef = useRef<any>(null)
+
+  // Auto-scroll to current field and focus it
+  useEffect(() => {
+    if (currentField) {
+      const fieldElement = document.querySelector(`[name="${currentField}"]`) as HTMLElement
+      if (fieldElement) {
+        fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+        // Focus the field
+        setTimeout(() => {
+          if (fieldElement instanceof HTMLInputElement ||
+              fieldElement instanceof HTMLTextAreaElement ||
+              fieldElement instanceof HTMLSelectElement) {
+            fieldElement.focus()
+          }
+        }, 300)
+
+        // Add highlight effect
+        fieldElement.classList.add('ring-2', 'ring-fuchsia-500', 'ring-offset-2')
+        setTimeout(() => {
+          fieldElement.classList.remove('ring-2', 'ring-fuchsia-500', 'ring-offset-2')
+        }, 2000)
+      }
+    }
+  }, [currentField])
 
   const handleSubmit = async (data: Partial<Event>) => {
     setIsLoading(true)
@@ -104,32 +130,22 @@ export default function NewEventPage() {
           initialData={formData}
         />
 
-        {/* AI Assistant Button */}
-        <button
-          onClick={() => setShowAIModal(true)}
-          className="fixed bottom-8 right-8 z-40 group"
-        >
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-fuchsia-500 to-purple-600 opacity-75 blur-xl group-hover:opacity-100 transition-opacity"></div>
-          <div className="relative w-16 h-16 rounded-full bg-gradient-to-r from-fuchsia-500 to-purple-600 flex items-center justify-center shadow-2xl shadow-fuchsia-500/50 group-hover:scale-110 transition-all">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-              />
-            </svg>
-          </div>
-        </button>
-
-        {/* AI Modal */}
-        <InteractiveVoiceModal
-          isOpen={showAIModal}
-          onClose={() => setShowAIModal(false)}
+        {/* Continuous Voice Assistant */}
+        <ContinuousVoiceAssistant
+          isActive={aiActive}
+          onToggle={() => setAiActive(!aiActive)}
           formType="event"
-          currentFormData={formData}
-          onFormUpdate={(data) => {
-            setFormData((prev) => ({ ...prev, ...data }))
+          onFormUpdate={(data, field) => {
+            console.log('[Page] Updating form data:', data)
+            setFormData((prev) => {
+              const updated = { ...prev, ...data }
+              console.log('[Page] New form state:', updated)
+              return updated
+            })
+            if (field) {
+              console.log('[Page] Setting current field:', field)
+              setCurrentField(field)
+            }
           }}
         />
       </div>
