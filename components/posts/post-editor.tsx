@@ -184,7 +184,7 @@ export function PostEditor({
                         type="file"
                         accept="image/*"
                         onChange={(e) => handleImageUpload(key, e)}
-                        ref={(el) => (fileInputRefs.current[key] = el)}
+                        ref={(el) => { fileInputRefs.current[key] = el }}
                         className="hidden"
                       />
                       <Button

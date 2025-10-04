@@ -42,7 +42,7 @@ export async function fetchAnalyticsSummary(
     return null
   }
 
-  return data
+  return data as AnalyticsSummary | null
 }
 
 /**

@@ -59,7 +59,7 @@ export function TagInput({
         {value.map((tag, index) => (
           <Badge
             key={index}
-            variant="secondary"
+            variant="default"
             className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 hover:bg-blue-200"
           >
             <span>{tag}</span>

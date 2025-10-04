@@ -39,7 +39,7 @@ export function DialogTrigger({ children }: DialogTriggerProps) {
 
   return React.cloneElement(children, {
     onClick: () => context.setOpen(true)
-  })
+  } as any)
 }
 
 export interface DialogContentProps {

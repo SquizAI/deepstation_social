@@ -300,7 +300,7 @@ export async function getJobMetrics(
       });
 
     const avgDuration = durations.length > 0
-      ? durations.reduce((sum, d) => sum + d, 0) / durations.length
+      ? durations.reduce((sum: number, d: number) => sum + d, 0) / durations.length
       : 0;
 
     const minDuration = durations.length > 0 ? Math.min(...durations) : 0;
@@ -368,7 +368,7 @@ export async function getPlatformPerformance(
       }) || [];
 
     const avgDuration = durations.length > 0
-      ? durations.reduce((sum, d) => sum + d, 0) / durations.length
+      ? durations.reduce((sum: number, d: number) => sum + d, 0) / durations.length
       : 0;
 
     const successRate = total > 0 ? (successful / total) * 100 : 0;

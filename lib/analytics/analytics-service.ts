@@ -65,7 +65,7 @@ export async function fetchAnalyticsSummary(
   dateRange: DateRange,
   platform?: Platform
 ): Promise<AnalyticsSummary | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const days = getDateRangeDays(dateRange)
 
   const { data, error } = await supabase
@@ -81,7 +81,7 @@ export async function fetchAnalyticsSummary(
     return null
   }
 
-  return data
+  return data as AnalyticsSummary | null
 }
 
 /**
@@ -91,7 +91,7 @@ export async function fetchPlatformPerformance(
   userId: string,
   dateRange: DateRange
 ): Promise<PlatformPerformance[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('platform_performance')
@@ -121,7 +121,7 @@ export async function getBestPostingTimes(
   dateRange: DateRange,
   platform?: Platform
 ): Promise<PostingTimeAnalytics[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const days = getDateRangeDays(dateRange)
 
   const { data, error } = await supabase.rpc('get_best_posting_times', {
@@ -147,7 +147,7 @@ export async function getTopPosts(
   platform?: Platform,
   limit: number = 10
 ): Promise<TopPost[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const days = getDateRangeDays(dateRange)
 
   const { data, error } = await supabase.rpc('get_top_posts', {
@@ -173,7 +173,7 @@ export async function getPostsOverTime(
   dateRange: DateRange,
   platform?: Platform
 ): Promise<PostsOverTime[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   let query = supabase
     .from('post_analytics')

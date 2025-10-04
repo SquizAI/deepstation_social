@@ -81,7 +81,7 @@ export function DateRangePicker({ value, customStart, customEnd, onChange }: Dat
                 mode="single"
                 selected={tempEnd}
                 onSelect={setTempEnd}
-                disabled={(date) => date > new Date() || (tempStart && date < tempStart)}
+                disabled={(date) => date > new Date() || !!(tempStart && date < tempStart)}
               />
             </div>
           </div>

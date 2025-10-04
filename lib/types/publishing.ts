@@ -5,6 +5,9 @@
 
 import { Platform } from './oauth';
 
+// Re-export Platform for convenience
+export type { Platform };
+
 /**
  * Request to publish content to social media platforms
  */
