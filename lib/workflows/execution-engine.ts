@@ -7,11 +7,12 @@ import { aiOrchestrator, AIModel, TaskType } from '../ai/orchestrator';
 import { imagen4Service } from '../ai/models/imagen4';
 import { veo3Service } from '../ai/models/veo3';
 import { firecrawlService } from '../ai/firecrawl-service';
+import { ClaudeAgentIntegration } from './claude-agent-integration';
 
 export interface WorkflowNode {
   id: string;
   nodeKey: string;
-  nodeType: 'trigger' | 'condition' | 'action' | 'ai' | 'transform' | 'delay' | 'loop' | 'branch';
+  nodeType: 'trigger' | 'condition' | 'action' | 'ai' | 'transform' | 'delay' | 'loop' | 'branch' | 'claude-agent';
   config: Record<string, any>;
   inputs: Array<{ nodeKey: string; outputKey?: string }>;
   outputs: Array<{ nodeKey: string; inputKey?: string }>;
@@ -52,6 +53,11 @@ export interface ExecutionResult {
  */
 export class WorkflowExecutionEngine {
   private context: ExecutionContext | null = null;
+  private claudeAgent: ClaudeAgentIntegration;
+
+  constructor() {
+    this.claudeAgent = new ClaudeAgentIntegration();
+  }
 
   /**
    * Execute a workflow
@@ -163,6 +169,9 @@ export class WorkflowExecutionEngine {
 
       case 'ai':
         return await this.executeAINode(node, inputs);
+
+      case 'claude-agent':
+        return await this.executeClaudeAgentNode(node, inputs);
 
       case 'action':
         return await this.executeActionNode(node, inputs);
@@ -328,6 +337,56 @@ export class WorkflowExecutionEngine {
   private async executeDelayNode(node: WorkflowNode): Promise<void> {
     const { duration } = node.config;
     await new Promise((resolve) => setTimeout(resolve, duration));
+  }
+
+  /**
+   * Execute Claude Agent node
+   */
+  private async executeClaudeAgentNode(node: WorkflowNode, inputs: any): Promise<any> {
+    const { agentName, operation, config = {} } = node.config;
+
+    if (!agentName) {
+      throw new Error('agentName is required for claude-agent node');
+    }
+
+    if (!operation) {
+      throw new Error('operation is required for claude-agent node');
+    }
+
+    // Merge node config with inputs for agent execution
+    const agentInputs = {
+      ...inputs,
+      ...config,
+    };
+
+    // Interpolate variables in string inputs
+    const processedInputs: Record<string, any> = {};
+    for (const [key, value] of Object.entries(agentInputs)) {
+      if (typeof value === 'string') {
+        processedInputs[key] = this.interpolateVariables(value, inputs);
+      } else {
+        processedInputs[key] = value;
+      }
+    }
+
+    // Execute the agent
+    const result = await this.claudeAgent.executeAgent(
+      agentName,
+      operation,
+      processedInputs
+    );
+
+    // Track cost
+    if (this.context && result.success) {
+      this.context.totalCost += result.cost;
+    }
+
+    // Throw error if agent failed
+    if (!result.success) {
+      throw new Error(`Agent ${agentName} failed: ${result.error}`);
+    }
+
+    return result.output;
   }
 
   /**
