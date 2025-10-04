@@ -4,10 +4,11 @@ import { veo3Service } from '@/lib/ai/models/veo3';
 import { enhanceVideoPrompt } from '@/lib/ai/prompt-enhancer';
 
 export const runtime = 'nodejs';
-export const maxDuration = 120; // 2 minutes for video generation
+export const maxDuration = 300; // 5 minutes for video generation (Veo 3 can take 2+ minutes)
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[Video Gen] Starting video generation request');
     const supabase = await createClient();
 
     // Get authenticated user
@@ -17,8 +18,11 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      console.log('[Video Gen] Auth error:', authError);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    console.log('[Video Gen] User authenticated:', user.id);
 
     const body = await request.json();
     const {
@@ -44,16 +48,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Image URL is required for image-to-video' }, { status: 400 });
     }
 
+    console.log('[Video Gen] Request params:', { prompt, duration, resolution, withAudio, shouldEnhance });
+
     const startTime = Date.now();
 
     // Enhance prompt before generation
+    console.log('[Video Gen] Enhancing prompt...');
     const enhancedPrompt = shouldEnhance
       ? await enhanceVideoPrompt(prompt, duration, style)
       : prompt;
+    console.log('[Video Gen] Prompt enhanced:', enhancedPrompt.substring(0, 100));
 
     let result;
 
     // Generate based on type
+    console.log('[Video Gen] Starting video generation with Veo 3...');
     if (type === 'image-to-video') {
       const imagePrompt = shouldEnhance
         ? await enhanceVideoPrompt(prompt || 'Animate this image', duration, style)
@@ -87,7 +96,15 @@ export async function POST(request: NextRequest) {
 
     const generationTime = Date.now() - startTime;
 
+    console.log('[Video Gen] Video generated successfully!', {
+      videoUrl: result.videoUrl.substring(0, 80),
+      duration: result.duration,
+      cost: result.cost,
+      generationTime,
+    });
+
     // Save generation to database
+    console.log('[Video Gen] Saving to database...');
     const { data: savedGeneration, error: dbError } = await supabase
       .from('ai_generations')
       .insert({
@@ -134,7 +151,8 @@ export async function POST(request: NextRequest) {
       generation: savedGeneration,
     });
   } catch (error) {
-    console.error('Video generation error:', error);
+    console.error('[Video Gen] ERROR:', error);
+    console.error('[Video Gen] Error stack:', error instanceof Error ? error.stack : 'No stack');
     return NextResponse.json(
       {
         error: 'Failed to generate video',

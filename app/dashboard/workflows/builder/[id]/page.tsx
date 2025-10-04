@@ -27,6 +27,7 @@ import { WorkflowTemplatesModal, WorkflowTemplate } from '@/components/workflow-
 import { WorkflowValidationPanel } from '@/components/workflow-validation-panel';
 import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useWorkflowHistory } from '@/hooks/useWorkflowHistory';
 
 interface WorkflowNode {
   id: string;
@@ -500,12 +501,99 @@ function WorkflowBuilderContent() {
   const [showValidationPanel, setShowValidationPanel] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
 
+  // Phase 2 feature states
+  const [nodeSearchQuery, setNodeSearchQuery] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const [connectionSuggestion, setConnectionSuggestion] = useState<{
+    sourceId: string;
+    targetId: string;
+    sourceName: string;
+    targetName: string;
+  } | null>(null);
+  const [isRestoringHistory, setIsRestoringHistory] = useState(false);
+
+  // Phase 2.1: Undo/Redo hook
+  const { pushState, undo, redo, canUndo, canRedo, getUndoActionName, getRedoActionName } = useWorkflowHistory();
+
   const nodeTypes: NodeTypes = {
     custom: CustomNode,
   };
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  // Wrap onEdgesChange to detect deletions
+  const handleEdgesChange = useCallback((changes: any[]) => {
+    onEdgesChange(changes);
+
+    // Check if any edge was removed
+    const hasRemoval = changes.some(change => change.type === 'remove');
+    if (hasRemoval && !isRestoringHistory) {
+      // We need to wait for the state update, so use a timeout
+      setTimeout(() => {
+        pushState(nodes, edges, 'delete_edge');
+      }, 0);
+    }
+  }, [onEdgesChange, nodes, edges, isRestoringHistory, pushState]);
+
+  // Phase 2.2: Filter nodes function
+  const filterNodes = useCallback((categoryNodes: any, query: string) => {
+    if (!query.trim()) return Object.entries(categoryNodes);
+
+    const lowerQuery = query.toLowerCase();
+    return Object.entries(categoryNodes).filter(([key, node]: [string, any]) => {
+      return (
+        node.label.toLowerCase().includes(lowerQuery) ||
+        node.description.toLowerCase().includes(lowerQuery) ||
+        node.nodeType.toLowerCase().includes(lowerQuery) ||
+        key.toLowerCase().includes(lowerQuery)
+      );
+    });
+  }, []);
+
+  // Phase 2.4: Auto-connect suggestion function
+  const checkForAutoConnectSuggestion = useCallback((newNode: Node, existingNodes: Node[]) => {
+    const PROXIMITY_THRESHOLD = 250; // pixels
+
+    // Find nearby nodes
+    const nearbyNodes = existingNodes.filter(node => {
+      const distance = Math.sqrt(
+        Math.pow(node.position.x - newNode.position.x, 2) +
+        Math.pow(node.position.y - newNode.position.y, 2)
+      );
+      return distance < PROXIMITY_THRESHOLD && node.id !== newNode.id;
+    });
+
+    if (nearbyNodes.length === 0) return;
+
+    // Find most logical connection (closest node to the left = source, new node = target)
+    const leftNodes = nearbyNodes.filter(n => n.position.x < newNode.position.x);
+    if (leftNodes.length === 0) return;
+
+    const closestLeft = leftNodes.reduce((closest, node) => {
+      const distClosest = Math.abs(closest.position.x - newNode.position.x);
+      const distNode = Math.abs(node.position.x - newNode.position.x);
+      return distNode < distClosest ? node : closest;
+    });
+
+    // Check if connection makes sense (not already connected)
+    const alreadyConnected = edges.some(
+      e => e.source === closestLeft.id && e.target === newNode.id
+    );
+
+    if (alreadyConnected) return;
+
+    // Show suggestion
+    setConnectionSuggestion({
+      sourceId: closestLeft.id,
+      targetId: newNode.id,
+      sourceName: closestLeft.data.nodeKey,
+      targetName: newNode.data.nodeKey,
+    });
+
+    // Auto-dismiss after 8 seconds
+    setTimeout(() => setConnectionSuggestion(null), 8000);
+  }, [edges]);
 
   useEffect(() => {
     // Load workflow
@@ -568,8 +656,8 @@ function WorkflowBuilderContent() {
       const sourceNode = nodes.find(n => n.id === params.source);
       const targetNode = nodes.find(n => n.id === params.target);
 
-      setEdges((eds) =>
-        addEdge(
+      setEdges((eds) => {
+        const newEdges = addEdge(
           {
             ...params,
             type: 'smoothstep',
@@ -583,10 +671,17 @@ function WorkflowBuilderContent() {
             markerEnd: { type: MarkerType.ArrowClosed, color: '#a855f7' },
           },
           eds
-        )
-      );
+        );
+
+        // Push to history (unless we're restoring)
+        if (!isRestoringHistory) {
+          pushState(nodes, newEdges, 'add_edge');
+        }
+
+        return newEdges;
+      });
     },
-    [setEdges, nodes]
+    [setEdges, nodes, isRestoringHistory, pushState]
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
@@ -595,12 +690,12 @@ function WorkflowBuilderContent() {
     setShowNodeEditor(true);
   }, []);
 
-  const addNode = (nodeType: string) => {
+  const addNode = (nodeType: string, position?: { x: number; y: number }) => {
     const template = NODE_TEMPLATES[nodeType as keyof typeof NODE_TEMPLATES];
     const newNode: Node = {
       id: `node-${Date.now()}`,
       type: 'custom',
-      position: { x: Math.random() * 500, y: Math.random() * 300 },
+      position: position || { x: Math.random() * 500, y: Math.random() * 300 },
       data: {
         nodeKey: `${nodeType}_${Date.now()}`,
         nodeType: template.nodeType,
@@ -610,22 +705,52 @@ function WorkflowBuilderContent() {
         onDuplicate: duplicateNode,
       },
     };
-    setNodes((nds) => [...nds, newNode]);
+    const updatedNodes = [...nodes, newNode];
+    setNodes(updatedNodes);
+
+    // Phase 2.4: Check for auto-connect suggestion
+    checkForAutoConnectSuggestion(newNode, nodes);
+
+    // Phase 2.1: Push to history
+    if (!isRestoringHistory) {
+      pushState(updatedNodes, edges, 'add_node');
+    }
   };
 
   const updateNode = (nodeId: string, updates: any) => {
-    setNodes((nds) =>
-      nds.map((node) =>
+    setNodes((nds) => {
+      const updatedNodes = nds.map((node) =>
         node.id === nodeId
           ? { ...node, data: { ...node.data, ...updates } }
           : node
-      )
-    );
+      );
+
+      // Push to history (unless we're restoring)
+      if (!isRestoringHistory) {
+        pushState(updatedNodes, edges, 'update_config');
+      }
+
+      return updatedNodes;
+    });
   };
 
   const deleteNode = (nodeId: string) => {
-    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
-    setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
+    setNodes((nds) => {
+      const newNodes = nds.filter((node) => node.id !== nodeId);
+
+      setEdges((eds) => {
+        const newEdges = eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId);
+
+        // Push to history (unless we're restoring)
+        if (!isRestoringHistory) {
+          pushState(newNodes, newEdges, 'delete_node');
+        }
+
+        return newEdges;
+      });
+
+      return newNodes;
+    });
     setShowNodeEditor(false);
   };
 
@@ -647,7 +772,13 @@ function WorkflowBuilderContent() {
         onDuplicate: duplicateNode,
       },
     };
-    setNodes((nds) => [...nds, newNode]);
+    const updatedNodes = [...nodes, newNode];
+    setNodes(updatedNodes);
+
+    // Push to history (unless we're restoring)
+    if (!isRestoringHistory) {
+      pushState(updatedNodes, edges, 'duplicate_node');
+    }
   };
 
   const toggleCategory = (categoryKey: string) => {
@@ -661,6 +792,61 @@ function WorkflowBuilderContent() {
       return next;
     });
   };
+
+  // Phase 2.1: Undo/Redo handlers
+  const handleUndo = useCallback(() => {
+    const previousState = undo();
+    if (previousState) {
+      setIsRestoringHistory(true);
+      setNodes(previousState.nodes);
+      setEdges(previousState.edges);
+      setTimeout(() => setIsRestoringHistory(false), 0);
+    }
+  }, [undo, setNodes, setEdges]);
+
+  const handleRedo = useCallback(() => {
+    const nextState = redo();
+    if (nextState) {
+      setIsRestoringHistory(true);
+      setNodes(nextState.nodes);
+      setEdges(nextState.edges);
+      setTimeout(() => setIsRestoringHistory(false), 0);
+    }
+  }, [redo, setNodes, setEdges]);
+
+  // Phase 2.3: Drag & Drop handlers
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const nodeKey = event.dataTransfer.getData('application/reactflow');
+      if (!nodeKey) return;
+
+      // Get drop position relative to ReactFlow viewport
+      const reactFlowBounds = (event.target as HTMLElement).getBoundingClientRect();
+      const position = {
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      };
+
+      addNode(nodeKey, position);
+      setIsDragging(false);
+    },
+    [addNode]
+  );
+
+  const onDragStart = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+
+  const onDragEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
 
   const executeWorkflow = async () => {
     setExecutionState({ status: 'running', nodeStates: {} });
@@ -738,6 +924,162 @@ function WorkflowBuilderContent() {
     }, 100);
   };
 
+  // Phase 1.1: Load workflow template
+  const loadTemplate = (template: WorkflowTemplate) => {
+    // Clear current workflow
+    setNodes([]);
+    setEdges([]);
+
+    // Create nodes from template
+    const newNodes: Node[] = template.nodes.map((templateNode, index) => ({
+      id: `node-${Date.now()}-${index}`,
+      type: 'custom',
+      position: templateNode.position,
+      data: {
+        nodeKey: templateNode.nodeKey,
+        nodeType: templateNode.nodeType,
+        config: templateNode.config,
+        status: 'idle',
+        onDelete: deleteNode,
+        onDuplicate: duplicateNode,
+      },
+    }));
+
+    setNodes(newNodes);
+
+    // Create edges from template
+    const newEdges: Edge[] = template.edges.map((edge, idx) => {
+      const sourceNode = newNodes[edge.source];
+      const targetNode = newNodes[edge.target];
+
+      return {
+        id: `e${sourceNode.id}-${targetNode.id}`,
+        source: sourceNode.id,
+        target: targetNode.id,
+        type: 'smoothstep',
+        animated: true,
+        label: getEdgeLabel(sourceNode, targetNode),
+        labelStyle: { fill: '#e9d5ff', fontWeight: 700, fontSize: 12 },
+        labelBgStyle: { fill: '#1a0f2e', fillOpacity: 0.9 },
+        labelBgPadding: [8, 4] as [number, number],
+        labelBgBorderRadius: 6,
+        style: { stroke: '#a855f7', strokeWidth: 2 },
+        markerEnd: { type: MarkerType.ArrowClosed, color: '#a855f7' },
+      };
+    });
+
+    setEdges(newEdges);
+  };
+
+  // Phase 1.4: Auto-layout nodes
+  const organizeNodes = () => {
+    if (nodes.length === 0) return;
+
+    // Find nodes with no incoming edges (triggers)
+    const triggers = nodes.filter(
+      (node) => !edges.some((edge) => edge.target === node.id)
+    );
+
+    // BFS to assign levels
+    const levels: Map<string, number> = new Map();
+    const queue = triggers.map((t) => ({ id: t.id, level: 0 }));
+
+    while (queue.length > 0) {
+      const { id, level } = queue.shift()!;
+      if (levels.has(id)) continue; // Already processed
+
+      levels.set(id, level);
+
+      // Find children
+      edges
+        .filter((e) => e.source === id)
+        .forEach((edge) => {
+          if (!levels.has(edge.target)) {
+            queue.push({ id: edge.target, level: level + 1 });
+          }
+        });
+    }
+
+    // Handle orphaned nodes (not connected to any trigger)
+    nodes.forEach((node) => {
+      if (!levels.has(node.id)) {
+        levels.set(node.id, 0);
+      }
+    });
+
+    // Position nodes based on levels
+    const levelCounts = new Map<number, number>();
+    const newNodes = nodes.map((node) => {
+      const level = levels.get(node.id) || 0;
+      const count = levelCounts.get(level) || 0;
+      levelCounts.set(level, count + 1);
+
+      return {
+        ...node,
+        position: {
+          x: 100 + level * 350,
+          y: 100 + count * 200,
+        },
+      };
+    });
+
+    setNodes(newNodes);
+  };
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onDelete: (nodeId) => {
+      if (nodeId) {
+        deleteNode(nodeId);
+        setSelectedNodeId(null);
+        setShowNodeEditor(false);
+      }
+    },
+    onUndo: handleUndo,
+    onRedo: handleRedo,
+    onSave: () => {
+      saveWorkflow();
+    },
+    onShowHelp: () => {
+      setShowKeyboardShortcuts(true);
+    },
+    onEscape: () => {
+      setShowNodeEditor(false);
+      setShowValidationPanel(false);
+      setShowKeyboardShortcuts(false);
+      setConnectionSuggestion(null);
+      setSelectedNodeId(null);
+    },
+    onRunWorkflow: () => {
+      if (executionState.status !== 'running') {
+        executeWorkflow();
+      }
+    },
+    selectedNodeId,
+    enabled: true,
+  });
+
+  // Helper to select a node and open inspector
+  const selectAndEditNode = (nodeId: string) => {
+    const node = nodes.find((n) => n.id === nodeId);
+    if (node) {
+      setSelectedNode(node);
+      setSelectedNodeId(nodeId);
+      setShowNodeEditor(true);
+    }
+  };
+
+  // Helper to copy webhook URL
+  const copyWebhookUrl = (nodeId: string) => {
+    const webhookUrl =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/api/webhooks/${nodeId}`
+        : `https://deepstation.ai/api/webhooks/${nodeId}`;
+
+    navigator.clipboard.writeText(webhookUrl);
+    alert('Webhook URL copied to clipboard!');
+  };
+
   return (
     <WorkflowBuilderModal isOpen={isBuilderOpen}>
       <div className="fixed inset-0 z-[9999] bg-[#0a0513] flex flex-col">
@@ -773,6 +1115,37 @@ function WorkflowBuilderContent() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            onClick={() => setShowTemplatesModal(true)}
+            className="bg-white/10 hover:bg-white/20 text-white"
+            title="Load workflow template"
+          >
+            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+            </svg>
+            Templates
+          </Button>
+          <Button
+            onClick={() => setShowValidationPanel(true)}
+            className="bg-white/10 hover:bg-white/20 text-white"
+            title="Validate workflow"
+          >
+            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Validate
+          </Button>
+          <Button
+            onClick={organizeNodes}
+            className="bg-white/10 hover:bg-white/20 text-white"
+            title="Auto-organize nodes"
+            disabled={nodes.length === 0}
+          >
+            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7H4V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7h-6V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
+            </svg>
+            Organize
+          </Button>
           <Button
             onClick={saveWorkflow}
             className="bg-white/10 hover:bg-white/20 text-white"
@@ -950,11 +1323,39 @@ function WorkflowBuilderContent() {
           <NodeConfigPanel
             node={selectedNode}
             onUpdate={updateNode}
-            onClose={() => setShowNodeEditor(false)}
+            onClose={() => {
+              setShowNodeEditor(false);
+              setSelectedNodeId(null);
+            }}
             onDelete={deleteNode}
           />
         )}
+
+        {/* Validation Panel */}
+        {showValidationPanel && (
+          <WorkflowValidationPanel
+            isOpen={showValidationPanel}
+            onClose={() => setShowValidationPanel(false)}
+            nodes={nodes}
+            edges={edges}
+            isNodeConfigured={isNodeConfigured}
+            onSelectNode={selectAndEditNode}
+            onCopyWebhook={copyWebhookUrl}
+          />
+        )}
       </div>
+
+      {/* Modals */}
+      <WorkflowTemplatesModal
+        isOpen={showTemplatesModal}
+        onClose={() => setShowTemplatesModal(false)}
+        onSelectTemplate={loadTemplate}
+      />
+
+      <KeyboardShortcutsModal
+        isOpen={showKeyboardShortcuts}
+        onClose={() => setShowKeyboardShortcuts(false)}
+      />
     </div>
     </WorkflowBuilderModal>
   );
