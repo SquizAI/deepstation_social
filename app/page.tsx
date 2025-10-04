@@ -54,7 +54,7 @@ export default function Home() {
                 <div className="absolute inset-0 bg-fuchsia-500 rounded-full blur-sm animate-[pulse-glow_2s_ease-in-out_infinite]"></div>
                 <div className="relative w-2 h-2 bg-fuchsia-400 rounded-full"></div>
               </div>
-              <span className="text-sm text-slate-300 font-medium">Powered by GPT-4, Gemini 2.5 & Claude 4</span>
+              <span className="text-sm text-slate-300 font-medium">Powered by GPT-5, Gemini 2.5 Pro & Claude Sonnet 4.5</span>
             </div>
 
             <h1 className="text-6xl md:text-7xl lg:text-8xl font-extrabold leading-tight">
@@ -130,7 +130,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-3">AI-Powered Creation</h3>
                 <p className="text-slate-400 leading-relaxed">
-                  Generate engaging posts with GPT-4, Gemini 2.5, and Claude 4. Platform-optimized content in seconds.
+                  Generate engaging posts with GPT-5, Gemini 2.5 Pro, and Claude Sonnet 4.5. Platform-optimized content in seconds.
                 </p>
               </div>
             </div>
