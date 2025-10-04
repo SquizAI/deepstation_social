@@ -12,13 +12,14 @@ interface CalendarClientProps {
     totalUpcoming: number
     upcomingPosts: number
     upcomingSpeakers: number
+    upcomingWorkshops?: number
     totalEvents: number
   }
 }
 
 export function CalendarClient({ events, stats }: CalendarClientProps) {
   const router = useRouter()
-  const [filterType, setFilterType] = useState<'all' | 'post' | 'speaker'>('all')
+  const [filterType, setFilterType] = useState<'all' | 'post' | 'speaker' | 'workshop'>('all')
 
   const filteredEvents = useMemo(
     () => filterEventsByType(events, filterType),
@@ -33,8 +34,10 @@ export function CalendarClient({ events, stats }: CalendarClientProps) {
   const handleEventClick = (event: CalendarEvent) => {
     if (event.type === 'post') {
       router.push(`/dashboard/posts/${event.id}`)
-    } else {
+    } else if (event.type === 'speaker') {
       router.push(`/dashboard/speakers/preview/${event.id}`)
+    } else if (event.type === 'workshop') {
+      router.push(`/dashboard/workshops/${event.id}`)
     }
   }
 
@@ -132,6 +135,25 @@ export function CalendarClient({ events, stats }: CalendarClientProps) {
             </div>
           </div>
 
+          {/* Workshops */}
+          {stats.upcomingWorkshops !== undefined && (
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 p-6 rounded-2xl hover:border-white/20 transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <span className="text-xs text-slate-400 uppercase tracking-wider">Workshops</span>
+                </div>
+                <div className="text-3xl font-bold text-white mb-1">{stats.upcomingWorkshops}</div>
+                <p className="text-sm text-slate-400">Workshop events</p>
+              </div>
+            </div>
+          )}
+
           {/* Total Events */}
           <div className="group relative">
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -185,6 +207,18 @@ export function CalendarClient({ events, stats }: CalendarClientProps) {
               >
                 Speakers Only
               </button>
+              {stats.upcomingWorkshops !== undefined && (
+                <button
+                  onClick={() => setFilterType('workshop')}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                    filterType === 'workshop'
+                      ? 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Workshops Only
+                </button>
+              )}
             </div>
           </div>
         </div>

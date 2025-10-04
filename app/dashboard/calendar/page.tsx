@@ -21,6 +21,22 @@ interface Speaker {
   status: string
 }
 
+interface Workshop {
+  id: string
+  title: string
+  description?: string
+  short_description?: string
+  event_date: string
+  start_time: string
+  end_time: string
+  location_type: 'online' | 'in-person' | 'hybrid'
+  location_city?: string
+  luma_url?: string
+  current_attendees: number
+  max_capacity?: number
+  status: string
+}
+
 export default async function CalendarPage() {
   const supabase = await createClient()
 
@@ -43,6 +59,13 @@ export default async function CalendarPage() {
   const { data: speakers } = await supabase
     .from('speakers')
     .select('*')
+    .order('event_date', { ascending: true })
+
+  // Fetch workshops
+  const { data: workshops } = await supabase
+    .from('workshops')
+    .select('*')
+    .eq('user_id', user.id)
     .order('event_date', { ascending: true })
 
   // Transform data into CalendarEvent format
@@ -85,6 +108,28 @@ export default async function CalendarPage() {
     })
   }
 
+  // Add workshop events
+  if (workshops) {
+    workshops.forEach((workshop: Workshop) => {
+      events.push({
+        id: workshop.id,
+        type: 'workshop',
+        date: workshop.event_date,
+        title: workshop.title,
+        description: workshop.description || workshop.short_description,
+        location: workshop.location_city,
+        locationType: workshop.location_type,
+        workshopUrl: workshop.luma_url,
+        attendeeCount: workshop.current_attendees,
+        maxCapacity: workshop.max_capacity,
+        startTime: workshop.start_time,
+        endTime: workshop.end_time,
+        status: workshop.status,
+        time: workshop.event_date
+      })
+    })
+  }
+
   // Calculate stats
   const now = new Date()
   const upcomingPosts = scheduledPosts?.filter(
@@ -95,7 +140,11 @@ export default async function CalendarPage() {
     (speaker: Speaker) => new Date(speaker.event_date) >= now
   ).length || 0
 
-  const totalUpcoming = upcomingPosts + upcomingSpeakers
+  const upcomingWorkshops = workshops?.filter(
+    (workshop: Workshop) => new Date(workshop.event_date) >= now && workshop.status === 'published'
+  ).length || 0
+
+  const totalUpcoming = upcomingPosts + upcomingSpeakers + upcomingWorkshops
 
   return (
     <CalendarClient
@@ -104,6 +153,7 @@ export default async function CalendarPage() {
         totalUpcoming,
         upcomingPosts,
         upcomingSpeakers,
+        upcomingWorkshops,
         totalEvents: events.length
       }}
     />

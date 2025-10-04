@@ -5,7 +5,7 @@
 
 export interface CalendarEvent {
   id: string
-  type: 'post' | 'speaker'
+  type: 'post' | 'speaker' | 'workshop'
   date: string
   title: string
   description?: string
@@ -13,6 +13,12 @@ export interface CalendarEvent {
   platforms?: string[] // for posts with multiple platforms
   speakerName?: string // for speakers
   location?: string // for speakers
+  locationType?: 'online' | 'in-person' | 'hybrid' // for workshops
+  workshopUrl?: string // for workshops (Luma URL)
+  attendeeCount?: number // for workshops
+  maxCapacity?: number // for workshops
+  startTime?: string // for workshops
+  endTime?: string // for workshops
   status?: string
   time?: string
 }
@@ -139,10 +145,17 @@ export function aggregateEventsByDate(
 /**
  * Get event color based on type
  */
-export function getEventColor(type: 'post' | 'speaker'): string {
-  return type === 'post'
-    ? 'fuchsia' // Fuchsia for posts
-    : 'purple'  // Purple for speakers
+export function getEventColor(type: 'post' | 'speaker' | 'workshop'): string {
+  switch (type) {
+    case 'post':
+      return 'fuchsia' // Fuchsia for posts
+    case 'speaker':
+      return 'purple' // Purple for speakers
+    case 'workshop':
+      return 'blue' // Blue for workshops
+    default:
+      return 'fuchsia'
+  }
 }
 
 /**
@@ -193,14 +206,16 @@ export function formatDisplayDate(dateString: string): string {
 export function getEventsCount(
   date: Date,
   events: CalendarEvent[]
-): { posts: number; speakers: number; total: number } {
+): { posts: number; speakers: number; workshops: number; total: number } {
   const dayEvents = getEventsForDate(date, events)
   const posts = dayEvents.filter((e) => e.type === 'post').length
   const speakers = dayEvents.filter((e) => e.type === 'speaker').length
+  const workshops = dayEvents.filter((e) => e.type === 'workshop').length
 
   return {
     posts,
     speakers,
+    workshops,
     total: dayEvents.length
   }
 }
@@ -242,7 +257,7 @@ export function getUpcomingEvents(
  */
 export function filterEventsByType(
   events: CalendarEvent[],
-  type: 'all' | 'post' | 'speaker'
+  type: 'all' | 'post' | 'speaker' | 'workshop'
 ): CalendarEvent[] {
   if (type === 'all') return events
   return events.filter((event) => event.type === type)
