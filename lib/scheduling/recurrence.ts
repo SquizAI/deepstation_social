@@ -153,7 +153,7 @@ export function getRecurrenceInfo(
 
     // Extract frequency
     const options = rule.origOptions;
-    const frequency = getFrequencyString(options.freq);
+    const frequency = options.freq ? getFrequencyString(options.freq) : 'Daily' as RecurrenceFrequency;
 
     // Human readable text
     const humanReadable = rule.toText();
@@ -165,7 +165,7 @@ export function getRecurrenceInfo(
       frequency,
       hasEndDate: !!options.until,
       endDate: options.until ? new Date(options.until) : undefined,
-      totalOccurrences: options.count,
+      totalOccurrences: options.count ?? undefined,
     };
   } catch (error: any) {
     console.error('Error getting recurrence info:', error);

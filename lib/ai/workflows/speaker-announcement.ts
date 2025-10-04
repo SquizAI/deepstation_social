@@ -4,7 +4,7 @@
  */
 
 import { generateAIContentWithFallback, AIGenerationOptions } from '../providers';
-import type { SpeakerFormData } from '@/lib/types/speakers';
+import type { SpeakerForm } from '@/lib/types/speakers';
 import type { Platform } from '@/lib/types/oauth';
 
 /**
@@ -70,7 +70,7 @@ export const WORKFLOW_CONFIG = {
  * Edit these prompts to customize the content generation
  */
 function generatePlatformPrompt(
-  speaker: SpeakerFormData,
+  speaker: SpeakerForm,
   platform: Platform
 ): string {
   const config = WORKFLOW_CONFIG.platforms[platform];
@@ -95,8 +95,8 @@ Speaker Details:
 - Expertise: ${speaker.expertise.join(', ')}
 - Event Date: ${speaker.eventDate.toLocaleDateString()}
 - Location: ${speaker.eventLocation}
-${speaker.notableHighlights ? `- Notable: ${speaker.notableHighlights}` : ''}
-${speaker.previousCompanies ? `- Previous: ${speaker.previousCompanies}` : ''}
+${speaker.highlights ? `- Notable: ${speaker.highlights.join(', ')}` : ''}
+${speaker.previousCompanies ? `- Previous: ${speaker.previousCompanies.join(', ')}` : ''}
   `.trim();
 
   const platformInstructions: Record<Platform, string> = {
@@ -107,7 +107,7 @@ Requirements:
 - Length: ${config.targetLength[0]}-${config.targetLength[1]} characters
 - Tone: ${brand.tone}, business-focused
 - Include: Speaker credentials, presentation value, event details
-- ${config.includeHashtags ? `Hashtags: ${config.hashtagCount[0]}-${config.hashtagCount[1]} relevant tags` : ''}
+- ${config.includeHashtags && 'hashtagCount' in config ? `Hashtags: ${config.hashtagCount[0]}-${config.hashtagCount[1]} relevant tags` : ''}
 - Call-to-action: Encourage registration/attendance
 - Format: Professional paragraph structure
 
@@ -122,10 +122,10 @@ Focus on:
 Create an engaging Twitter/X announcement for this speaker.
 
 Requirements:
-- ${config.threadSupport ? 'Create a 3-4 tweet thread' : 'Single tweet'}
+- ${'threadSupport' in config && config.threadSupport ? 'Create a 3-4 tweet thread' : 'Single tweet'}
 - Length: ${config.targetLength[0]}-${config.targetLength[1]} characters per tweet
 - Tone: ${brand.tone}, exciting and concise
-- ${config.includeHashtags ? `Hashtags: ${config.hashtagCount[0]}-${config.hashtagCount[1]} tags` : ''}
+- ${config.includeHashtags && 'hashtagCount' in config ? `Hashtags: ${config.hashtagCount[0]}-${config.hashtagCount[1]} tags` : ''}
 - Hook: Grab attention in first tweet
 - Call-to-action: Clear next steps
 
@@ -142,8 +142,8 @@ Create a visually-oriented Instagram caption for this speaker.
 Requirements:
 - Length: ${config.targetLength[0]}-${config.targetLength[1]} characters
 - Tone: ${brand.tone}, visual and inspiring
-- ${config.includeEmojis ? 'Include relevant emojis' : ''}
-- ${config.includeHashtags ? `Hashtags: ${config.hashtagCount[0]}-${config.hashtagCount[1]} tags at the end` : ''}
+- ${'includeEmojis' in config && config.includeEmojis ? 'Include relevant emojis' : ''}
+- ${config.includeHashtags && 'hashtagCount' in config ? `Hashtags: ${config.hashtagCount[0]}-${config.hashtagCount[1]} tags at the end` : ''}
 - Structure: Hook, story, call-to-action
 - Readability: Line breaks for easy reading
 
@@ -160,7 +160,7 @@ Create a community-focused Discord announcement for this speaker.
 Requirements:
 - Length: ${config.targetLength[0]}-${config.targetLength[1]} characters
 - Tone: ${brand.tone}, community-driven
-- ${config.markdown ? 'Use Discord markdown (**, *, >, etc.)' : ''}
+- ${'markdown' in config && config.markdown ? 'Use Discord markdown (**, *, >, etc.)' : ''}
 - Include: @everyone or @here mention
 - Format: Clear sections with headers
 - Call-to-action: Encourage participation
@@ -181,7 +181,7 @@ Structure:
  * Generate speaker announcement for a specific platform
  */
 export async function generateSpeakerAnnouncementForPlatform(
-  speaker: SpeakerFormData,
+  speaker: SpeakerForm,
   platform: Platform,
   options: AIGenerationOptions = {}
 ): Promise<string> {
@@ -204,7 +204,7 @@ Follow the platform-specific guidelines precisely and maintain the brand voice: 
  * Generate announcements for all platforms
  */
 export async function generateAllSpeakerAnnouncements(
-  speaker: SpeakerFormData,
+  speaker: SpeakerForm,
   options: AIGenerationOptions = {}
 ): Promise<Record<Platform, string>> {
   const platforms: Platform[] = ['linkedin', 'twitter', 'instagram', 'discord'];
@@ -256,7 +256,7 @@ export function validateAnnouncementContent(
   }
 
   // Platform-specific validation
-  if (platform === 'twitter' && config.threadSupport) {
+  if (platform === 'twitter' && 'threadSupport' in config && config.threadSupport) {
     const tweets = content.split('\n\n').filter((t) => t.trim());
     const oversizedTweets = tweets.filter((t) => t.length > 280);
     if (oversizedTweets.length > 0) {
