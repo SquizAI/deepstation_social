@@ -1115,6 +1115,30 @@ function WorkflowBuilderContent() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Phase 2.1: Undo/Redo Buttons */}
+          <div className="flex items-center gap-1 border-r border-white/10 pr-3">
+            <Button
+              onClick={handleUndo}
+              disabled={!canUndo}
+              className="bg-white/10 hover:bg-white/20 text-white disabled:opacity-30 disabled:cursor-not-allowed px-3"
+              title={canUndo ? `Undo: ${getUndoActionName()}` : 'Nothing to undo'}
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+            </Button>
+            <Button
+              onClick={handleRedo}
+              disabled={!canRedo}
+              className="bg-white/10 hover:bg-white/20 text-white disabled:opacity-30 disabled:cursor-not-allowed px-3"
+              title={canRedo ? `Redo: ${getRedoActionName()}` : 'Nothing to redo'}
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
+              </svg>
+            </Button>
+          </div>
+
           <Button
             onClick={() => setShowTemplatesModal(true)}
             className="bg-white/10 hover:bg-white/20 text-white"
@@ -1206,8 +1230,40 @@ function WorkflowBuilderContent() {
             <p className="text-slate-400 text-sm mt-1">Drag & drop or click to add</p>
           </div>
 
+          {/* Phase 2.2: Search Input */}
+          <div className="p-4 border-b border-white/10">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search nodes..."
+                value={nodeSearchQuery}
+                onChange={(e) => setNodeSearchQuery(e.target.value)}
+                className="w-full px-3 py-2 pl-9 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-fuchsia-500 text-sm"
+              />
+              <svg className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              {nodeSearchQuery && (
+                <button
+                  onClick={() => setNodeSearchQuery('')}
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="p-4 space-y-2">
-            {Object.entries(NODE_CATEGORIES).map(([categoryKey, category]) => (
+            {(() => {
+              let visibleCategoriesCount = 0;
+              const categoryElements = Object.entries(NODE_CATEGORIES).map(([categoryKey, category]) => {
+                const filteredNodes = filterNodes(category.nodes, nodeSearchQuery);
+                if (filteredNodes.length === 0 && nodeSearchQuery) return null;
+                visibleCategoriesCount++;
+                return (
               <div key={categoryKey} className="rounded-xl overflow-hidden bg-white/5 border border-white/10">
                 {/* Accordion Header */}
                 <button
@@ -1233,11 +1289,18 @@ function WorkflowBuilderContent() {
                 {/* Accordion Content */}
                 {openCategories.has(categoryKey) && (
                   <div className="px-3 pb-3 space-y-2">
-                    {Object.entries(category.nodes).map(([nodeKey, template]) => (
+                    {filteredNodes.map(([nodeKey, template]: [string, any]) => (
                       <button
                         key={nodeKey}
                         onClick={() => addNode(nodeKey)}
-                        className="w-full group"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('application/reactflow', nodeKey);
+                          e.dataTransfer.effectAllowed = 'move';
+                          onDragStart();
+                        }}
+                        onDragEnd={onDragEnd}
+                        className="w-full group cursor-move"
                       >
                         <div className={`bg-gradient-to-r ${template.color} p-0.5 rounded-lg hover:shadow-lg hover:shadow-purple-500/20 transition-all`}>
                           <div className="bg-[#1a0f2e] rounded-lg p-3">
@@ -1259,7 +1322,27 @@ function WorkflowBuilderContent() {
                   </div>
                 )}
               </div>
-            ))}
+
+              // Show empty state if no results
+              if (nodeSearchQuery && visibleCategoriesCount === 0) {
+                return (
+                  <div className="p-8 text-center">
+                    <svg className="h-12 w-12 mx-auto text-slate-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-slate-400 text-sm">No nodes found for <span className="text-white font-semibold">"{nodeSearchQuery}"</span></p>
+                    <button
+                      onClick={() => setNodeSearchQuery('')}
+                      className="mt-3 text-xs text-fuchsia-400 hover:text-fuchsia-300"
+                    >
+                      Clear search
+                    </button>
+                  </div>
+                );
+              }
+
+              return categoryElements;
+            })()}
           </div>
 
           {/* Execution Status */}
@@ -1292,9 +1375,11 @@ function WorkflowBuilderContent() {
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
+            onEdgesChange={handleEdgesChange}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
             nodeTypes={nodeTypes}
             fitView
             proOptions={{ hideAttribution: true }}
@@ -1304,6 +1389,7 @@ function WorkflowBuilderContent() {
               animated: true,
               style: { stroke: '#a855f7', strokeWidth: 2 },
             }}
+            className={isDragging ? 'ring-2 ring-fuchsia-500/50 ring-inset' : ''}
           >
             <Background color="#a855f7" gap={20} size={1} style={{ opacity: 0.1 }} />
             <Controls className="bg-white/10 backdrop-blur-sm border border-white/20" />
@@ -1316,6 +1402,49 @@ function WorkflowBuilderContent() {
               className="bg-white/10 backdrop-blur-sm border border-white/20"
             />
           </ReactFlow>
+
+          {/* Phase 2.4: Auto-Connect Suggestion Tooltip */}
+          {connectionSuggestion && (
+            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-lg shadow-2xl p-4 border border-white/20 animate-in fade-in slide-in-from-bottom-4">
+              <div className="flex items-center gap-3">
+                <svg className="h-5 w-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <div className="text-white text-sm">
+                  Connect <strong className="font-bold">{connectionSuggestion.sourceName}</strong> to <strong className="font-bold">{connectionSuggestion.targetName}</strong>?
+                </div>
+                <div className="flex gap-2 ml-2">
+                  <button
+                    onClick={() => {
+                      // Create the connection
+                      const newEdge: Edge = {
+                        id: `e${connectionSuggestion.sourceId}-${connectionSuggestion.targetId}`,
+                        source: connectionSuggestion.sourceId,
+                        target: connectionSuggestion.targetId,
+                        type: 'smoothstep',
+                        animated: true,
+                        style: { stroke: '#a855f7', strokeWidth: 2 },
+                        markerEnd: { type: MarkerType.ArrowClosed, color: '#a855f7' },
+                      };
+                      const updatedEdges = [...edges, newEdge];
+                      setEdges(updatedEdges);
+                      pushState(nodes, updatedEdges, 'add_edge');
+                      setConnectionSuggestion(null);
+                    }}
+                    className="px-3 py-1 bg-white text-purple-600 rounded font-semibold text-xs hover:bg-gray-100 transition-colors"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setConnectionSuggestion(null)}
+                    className="px-3 py-1 bg-white/20 text-white rounded font-semibold text-xs hover:bg-white/30 transition-colors"
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Node Inspector */}

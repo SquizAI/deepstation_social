@@ -316,16 +316,18 @@ export default function AIStudioPage() {
             ) : (
               <>
                 {/* Video Generation Controls */}
-                <div>
-                  <Label className="text-slate-300 mb-2 block">Prompt</Label>
-                  <Textarea
-                    value={videoPrompt}
-                    onChange={(e) => setVideoPrompt(e.target.value)}
-                    placeholder="Describe the video you want to generate..."
-                    rows={4}
-                    className="bg-white/5 border-white/20 text-white placeholder:text-slate-500"
-                  />
-                </div>
+                <div className={isGenerating ? 'opacity-50 pointer-events-none transition-opacity' : 'transition-opacity'}>
+                  <div>
+                    <Label className="text-slate-300 mb-2 block">Prompt</Label>
+                    <Textarea
+                      value={videoPrompt}
+                      onChange={(e) => setVideoPrompt(e.target.value)}
+                      placeholder="Describe the video you want to generate..."
+                      rows={4}
+                      disabled={isGenerating}
+                      className="bg-white/5 border-white/20 text-white placeholder:text-slate-500"
+                    />
+                  </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -396,32 +398,33 @@ export default function AIStudioPage() {
                   <Label className="text-slate-300">Generate with audio</Label>
                 </div>
 
-                <Button
-                  onClick={generateVideo}
-                  disabled={isGenerating}
-                  className="w-full bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white hover:opacity-90"
-                >
-                  {isGenerating ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Generating Video...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      Generate Video
-                    </>
-                  )}
-                </Button>
+                  <Button
+                    onClick={generateVideo}
+                    disabled={isGenerating}
+                    className="w-full bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white hover:opacity-90"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Generating Video...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Generate Video
+                      </>
+                    )}
+                  </Button>
 
-                <div className="text-xs text-slate-400 text-center">
-                  Cost: ${(videoDuration * (withAudio ? 0.40 : 0.35)).toFixed(2)} • Est. time: {Math.ceil(videoDuration * 4)}s
-                  {withAudio && <span className="ml-2 text-fuchsia-400">(with audio)</span>}
+                  <div className="text-xs text-slate-400 text-center">
+                    Cost: ${(videoDuration * 0.40).toFixed(2)} • Est. time: {Math.ceil(videoDuration * 4)}s
+                    <span className="ml-2 text-fuchsia-400">(with audio)</span>
+                  </div>
                 </div>
               </>
             )}
@@ -498,8 +501,46 @@ export default function AIStudioPage() {
               </>
             ) : (
               <>
+                {/* Video Loading State */}
+                {isGenerating && (
+                  <div className="border border-white/10 rounded-xl overflow-hidden bg-white/5 p-12">
+                    <div className="flex flex-col items-center justify-center">
+                      {/* Spinning Video Icon */}
+                      <div className="relative mb-6">
+                        <svg
+                          className="h-20 w-20 text-fuchsia-500 animate-pulse"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                          />
+                        </svg>
+                        <svg className="absolute top-0 left-0 h-20 w-20 animate-spin text-fuchsia-500/30" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-semibold text-white mb-2">
+                        Generating Your Video...
+                      </h3>
+                      <p className="text-slate-400 text-center mb-4">
+                        This may take up to 2 minutes. Please be patient while Veo 3 creates your video.
+                      </p>
+                      <div className="flex items-center gap-2 text-sm text-slate-500">
+                        <div className="w-2 h-2 bg-fuchsia-500 rounded-full animate-ping"></div>
+                        <span>Processing with Google Veo 3...</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Video Output */}
-                {generatedVideo && (
+                {!isGenerating && generatedVideo && (
                   <div className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
                     <video
                       src={generatedVideo.url}
