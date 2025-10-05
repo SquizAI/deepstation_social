@@ -242,7 +242,7 @@ export function SchedulePicker({ onSchedule, onPostNow }: SchedulePickerProps) {
       <div className="flex gap-3 pt-4 border-t">
         <Button
           onClick={onPostNow}
-          variant="outline"
+          variant="default"
           className="flex-1"
         >
           Post Now

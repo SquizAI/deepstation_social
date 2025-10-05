@@ -380,7 +380,7 @@ export default function NewSpeakerPage() {
                     />
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="default"
                       onClick={() => {
                         setImageFile(null)
                         setImagePreview(null)

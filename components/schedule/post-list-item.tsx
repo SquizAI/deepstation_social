@@ -131,7 +131,7 @@ export function PostListItem({
                   </Badge>
 
                   {post.recurring_pattern && post.recurring_pattern.frequency !== 'none' && (
-                    <Badge variant="outline" className="text-xs border-purple-500/30 bg-purple-500/10 text-purple-400">
+                    <Badge variant="default" className="text-xs border-purple-500/30 bg-purple-500/10 text-purple-400">
                       <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
@@ -140,7 +140,7 @@ export function PostListItem({
                   )}
 
                   {post.retry_count && post.retry_count > 0 && (
-                    <Badge variant="outline" className="text-xs border-orange-500/30 bg-orange-500/10 text-orange-400">
+                    <Badge variant="default" className="text-xs border-orange-500/30 bg-orange-500/10 text-orange-400">
                       Retry {post.retry_count}/{post.max_retries || 3}
                     </Badge>
                   )}
@@ -295,7 +295,7 @@ export function PostListItem({
         <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/10">
           <Button
             size="sm"
-            variant="outline"
+            variant="default"
             onClick={onEdit}
             className="border-white/20 hover:bg-white/10"
           >
@@ -307,7 +307,7 @@ export function PostListItem({
 
           <Button
             size="sm"
-            variant="outline"
+            variant="default"
             onClick={onDuplicate}
             className="border-white/20 hover:bg-white/10"
           >
@@ -320,7 +320,7 @@ export function PostListItem({
           {post.status === 'scheduled' && (
             <Button
               size="sm"
-              variant="outline"
+              variant="default"
               onClick={onPostNow}
               className="border-green-500/30 text-green-400 hover:bg-green-500/10"
             >
@@ -334,7 +334,7 @@ export function PostListItem({
           {post.status === 'failed' && onRetry && (
             <Button
               size="sm"
-              variant="outline"
+              variant="default"
               onClick={onRetry}
               className="border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
             >
@@ -347,7 +347,7 @@ export function PostListItem({
 
           <Button
             size="sm"
-            variant="outline"
+            variant="default"
             onClick={onDelete}
             className="border-red-500/30 text-red-400 hover:bg-red-500/10 ml-auto"
           >

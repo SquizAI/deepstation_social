@@ -186,7 +186,7 @@ export function RescheduleModal({ post, open, onClose, onSuccess }: RescheduleMo
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
+          <Button variant="default" onClick={handleClose} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button onClick={handleReschedule} disabled={!selectedDate || isSubmitting}>

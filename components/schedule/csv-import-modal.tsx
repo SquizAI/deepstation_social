@@ -146,7 +146,7 @@ export function CSVImportModal({ userId, onImportComplete, onClose }: CSVImportM
           {/* Template Download */}
           <div className="mb-6">
             <Button
-              variant="outline"
+              variant="default"
               onClick={handleDownloadTemplate}
               className="border-white/20 hover:bg-white/10"
             >
@@ -177,7 +177,7 @@ export function CSVImportModal({ userId, onImportComplete, onClose }: CSVImportM
                     {(file.size / 1024).toFixed(2)} KB
                   </p>
                   <Button
-                    variant="outline"
+                    variant="default"
                     onClick={() => fileInputRef.current?.click()}
                     className="mt-4 border-white/20 hover:bg-white/10"
                   >
@@ -192,7 +192,7 @@ export function CSVImportModal({ userId, onImportComplete, onClose }: CSVImportM
                   <p className="text-white font-medium mb-1">Click to upload CSV file</p>
                   <p className="text-gray-400 text-sm">or drag and drop</p>
                   <Button
-                    variant="outline"
+                    variant="default"
                     onClick={() => fileInputRef.current?.click()}
                     className="mt-4 border-white/20 hover:bg-white/10"
                   >
@@ -268,7 +268,7 @@ export function CSVImportModal({ userId, onImportComplete, onClose }: CSVImportM
         {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t border-white/10">
           <Button
-            variant="outline"
+            variant="default"
             onClick={onClose}
             className="border-white/20 hover:bg-white/10"
           >

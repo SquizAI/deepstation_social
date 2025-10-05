@@ -330,7 +330,7 @@ export default function NotificationsPage() {
         </Button>
         <Button
           onClick={loadPreferences}
-          variant="outline"
+          variant="default"
           className="border-white/20 text-slate-300 hover:bg-white/5"
         >
           Reset

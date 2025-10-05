@@ -396,7 +396,7 @@ export default function ProfilePage() {
           <Button
             type="button"
             onClick={loadProfile}
-            variant="outline"
+            variant="default"
             className="border-white/20 text-slate-300 hover:bg-white/5"
           >
             Cancel

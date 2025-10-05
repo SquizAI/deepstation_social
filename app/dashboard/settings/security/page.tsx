@@ -187,7 +187,7 @@ export default function SecurityPage() {
           </span>
         </div>
         <Button
-          variant="outline"
+          variant="default"
           className="border-white/20 text-slate-300 hover:bg-white/5"
         >
           Enable Two-Factor Auth
@@ -203,7 +203,7 @@ export default function SecurityPage() {
           </div>
           <Button
             onClick={handleSignOutAllDevices}
-            variant="outline"
+            variant="default"
             className="border-red-500/30 text-red-300 hover:bg-red-500/10"
           >
             Sign Out All
@@ -248,7 +248,7 @@ export default function SecurityPage() {
               </div>
               {!session.current && (
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   className="border-white/20 text-slate-300 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-300"
                 >
@@ -303,7 +303,7 @@ export default function SecurityPage() {
               </div>
             </div>
             <Button
-              variant="outline"
+              variant="default"
               className="border-red-500/30 text-red-300 hover:bg-red-500/20 hover:border-red-500/50"
             >
               Delete Account

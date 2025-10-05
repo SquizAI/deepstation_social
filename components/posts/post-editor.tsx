@@ -257,7 +257,7 @@ export function PostEditor({
                       />
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="default"
                         onClick={() => fileInputRefs.current[key]?.click()}
                       >
                         Upload Image

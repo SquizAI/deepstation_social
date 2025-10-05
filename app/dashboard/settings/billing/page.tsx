@@ -97,7 +97,7 @@ export default function BillingPage() {
             Change Plan
           </Button>
           <Button
-            variant="outline"
+            variant="default"
             className="border-red-500/30 text-red-300 hover:bg-red-500/10 hover:border-red-500/50"
           >
             Cancel Subscription
@@ -131,7 +131,7 @@ export default function BillingPage() {
             </div>
           </div>
           <Button
-            variant="outline"
+            variant="default"
             className="border-white/20 text-slate-300 hover:bg-white/5"
           >
             Update
@@ -172,7 +172,7 @@ export default function BillingPage() {
               <div className="flex items-center gap-4">
                 <span className="text-lg font-semibold text-white">{invoice.amount}</span>
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   className="border-white/20 text-slate-300 hover:bg-white/5"
                 >
@@ -243,7 +243,7 @@ export default function BillingPage() {
               here to help.
             </p>
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
               className="border-blue-500/30 text-blue-300 hover:bg-blue-500/10"
             >

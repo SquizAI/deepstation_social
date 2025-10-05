@@ -297,7 +297,7 @@ export function WorkflowGenerator({ onContentGenerated, onClose, isOpen }: Workf
 
                 <div className="flex gap-3 pt-4">
                   <Button
-                    variant="outline"
+                    variant="default"
                     onClick={handleBack}
                     className="bg-white/5 border-purple-500/20 text-white hover:bg-white/10"
                   >
@@ -373,7 +373,7 @@ export function WorkflowGenerator({ onContentGenerated, onClose, isOpen }: Workf
 
                 <div className="flex gap-3 pt-4">
                   <Button
-                    variant="outline"
+                    variant="default"
                     onClick={handleBack}
                     className="bg-white/5 border-purple-500/20 text-white hover:bg-white/10"
                   >
@@ -448,7 +448,7 @@ export function WorkflowGenerator({ onContentGenerated, onClose, isOpen }: Workf
 
                 <div className="flex gap-3 pt-4">
                   <Button
-                    variant="outline"
+                    variant="default"
                     onClick={handleBack}
                     className="bg-white/5 border-purple-500/20 text-white hover:bg-white/10"
                   >
@@ -535,7 +535,7 @@ export function WorkflowGenerator({ onContentGenerated, onClose, isOpen }: Workf
 
                 <div className="flex gap-3 pt-4">
                   <Button
-                    variant="outline"
+                    variant="default"
                     onClick={handleBack}
                     className="bg-white/5 border-purple-500/20 text-white hover:bg-white/10"
                   >

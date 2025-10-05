@@ -267,7 +267,7 @@ export default function WorkflowSettingsPage() {
           </div>
           <div className="flex gap-3">
             <Button
-              variant="outline"
+              variant="default"
               onClick={exportSettings}
               className="border-white/20 text-white hover:bg-white/10"
             >
@@ -277,7 +277,7 @@ export default function WorkflowSettingsPage() {
               Export
             </Button>
             <Button
-              variant="outline"
+              variant="default"
               onClick={importSettings}
               className="border-white/20 text-white hover:bg-white/10"
             >
@@ -761,7 +761,7 @@ export default function WorkflowSettingsPage() {
             </div>
             <div className="flex gap-3">
               <Button
-                variant="outline"
+                variant="default"
                 onClick={resetDefaults}
                 className="border-white/20 text-white hover:bg-white/10"
               >
