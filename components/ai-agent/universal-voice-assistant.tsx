@@ -61,7 +61,7 @@ export function UniversalVoiceAssistant({ forceFormType }: UniversalVoiceAssista
 
     const discoveredSchema: FieldSchema[] = []
 
-    // Find all form fields
+    // Find all form fields including checkboxes, radios, and selects
     const fields = document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
       'input, textarea, select'
     )
@@ -69,13 +69,12 @@ export function UniversalVoiceAssistant({ forceFormType }: UniversalVoiceAssista
     fields.forEach(field => {
       const name = field.name || field.id || field.getAttribute('data-field')
       if (name) {
-        // Skip file inputs, buttons, hidden, checkbox, radio
-        if (field.type === 'file' || field.type === 'button' || field.type === 'submit' ||
-            field.type === 'hidden' || field.type === 'checkbox' || field.type === 'radio') {
+        // Skip file inputs, buttons, hidden, and submit
+        if (field.type === 'file' || field.type === 'button' || field.type === 'submit' || field.type === 'hidden') {
           return
         }
 
-        // Add to cache
+        // Add to cache (including checkbox, radio, select)
         fieldCacheRef.current.set(name, {
           element: field,
           name,
@@ -98,10 +97,18 @@ export function UniversalVoiceAssistant({ forceFormType }: UniversalVoiceAssista
           label = ('placeholder' in field ? field.placeholder : undefined) || name
         }
 
+        // Determine field type - map checkboxes to boolean
+        let fieldType = field.type || 'text'
+        if (field.type === 'checkbox') {
+          fieldType = 'boolean'
+        } else if (field.tagName === 'SELECT') {
+          fieldType = 'select'
+        }
+
         // Add to schema for AI context
         discoveredSchema.push({
           name,
-          type: field.type || 'text',
+          type: fieldType,
           label: label,
           required: field.required || false,
           placeholder: ('placeholder' in field ? field.placeholder : undefined) || undefined,
@@ -241,10 +248,37 @@ export function UniversalVoiceAssistant({ forceFormType }: UniversalVoiceAssista
   }, [])
 
   // Optimized field value setter with React event triggering
-  const setFieldValue = useCallback((field: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, value: string) => {
+  const setFieldValue = useCallback((field: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, value: string | boolean) => {
     const startTime = performance.now()
 
-    // Get native value setter for the field type
+    // Handle checkboxes (boolean fields)
+    if (field instanceof HTMLInputElement && field.type === 'checkbox') {
+      const boolValue = typeof value === 'boolean' ? value : value === 'true' || value === 'yes' || value === '1'
+      field.checked = boolValue
+      field.dispatchEvent(new Event('change', { bubbles: true }))
+      console.log(`[UniversalVA] Set checkbox ${field.name} to ${boolValue}`)
+      return
+    }
+
+    // Handle radio buttons
+    if (field instanceof HTMLInputElement && field.type === 'radio') {
+      if (field.value === String(value)) {
+        field.checked = true
+        field.dispatchEvent(new Event('change', { bubbles: true }))
+        console.log(`[UniversalVA] Set radio ${field.name} to ${value}`)
+      }
+      return
+    }
+
+    // Handle select dropdowns
+    if (field instanceof HTMLSelectElement) {
+      field.value = String(value)
+      field.dispatchEvent(new Event('change', { bubbles: true }))
+      console.log(`[UniversalVA] Set select ${field.name} to ${value}`)
+      return
+    }
+
+    // Get native value setter for text/textarea fields
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
       'value'
@@ -256,11 +290,11 @@ export function UniversalVoiceAssistant({ forceFormType }: UniversalVoiceAssista
 
     // Set value using native setter to bypass React's control
     if (field instanceof HTMLInputElement && nativeInputValueSetter) {
-      nativeInputValueSetter.call(field, value)
+      nativeInputValueSetter.call(field, String(value))
     } else if (field instanceof HTMLTextAreaElement && nativeTextAreaValueSetter) {
-      nativeTextAreaValueSetter.call(field, value)
+      nativeTextAreaValueSetter.call(field, String(value))
     } else {
-      field.value = value
+      field.value = String(value)
     }
 
     // Dispatch React events

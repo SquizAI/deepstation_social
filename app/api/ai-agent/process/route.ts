@@ -183,7 +183,7 @@ function cleanResponseText(text: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { conversation, formType = 'generic', fieldSchema = [] } = body
+    const { conversation, formType = 'generic', fieldSchema = [], accumulatedData = {} } = body
 
     if (!conversation || !Array.isArray(conversation)) {
       return NextResponse.json(
@@ -227,6 +227,23 @@ The following fields are available in the current form. You MUST use these EXACT
 ${fieldList}
 
 CRITICAL: Only extract data for fields that exist in the list above. Use the EXACT field names shown (e.g., "location_name" NOT "venue_name").`
+    }
+
+    // Add accumulated data context if available
+    if (accumulatedData && Object.keys(accumulatedData).length > 0) {
+      const filledFields = Object.entries(accumulatedData)
+        .filter(([_, value]) => value !== null && value !== undefined && value !== '')
+        .map(([key, value]) => `- ${key}: ${JSON.stringify(value)}`)
+        .join('\n')
+
+      systemPrompt = `${systemPrompt}
+
+PREVIOUSLY FILLED FIELDS:
+The user has already provided the following information. Include these in your formData output:
+
+${filledFields}
+
+Remember: Always include ALL previously filled fields in your formData output, even if the user doesn't mention them again.`
     }
 
     // Call Claude with user's preferred model
@@ -321,10 +338,33 @@ CRITICAL: Only extract data for fields that exist in the list above. Use the EXA
     const rawResponse = assistantMessage.replace(/<formData>[\s\S]*?<\/formData>/, '').trim()
     const cleanResponse = cleanResponseText(rawResponse)
 
+    // Determine next field suggestion
+    let nextField = null
+    if (formData && fieldSchema && fieldSchema.length > 0) {
+      // Find the next empty required field
+      const allFilledFields = { ...accumulatedData, ...formData }
+      const nextRequiredField = fieldSchema.find(
+        (f: any) => f.required && !allFilledFields[f.name]
+      )
+
+      if (nextRequiredField) {
+        nextField = nextRequiredField.name
+      } else {
+        // If all required fields are filled, suggest the next optional field
+        const nextOptionalField = fieldSchema.find(
+          (f: any) => !f.required && !allFilledFields[f.name]
+        )
+        if (nextOptionalField) {
+          nextField = nextOptionalField.name
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       response: cleanResponse,
       formData,
+      nextField,
     })
   } catch (error: any) {
     console.error('Process error:', error)
