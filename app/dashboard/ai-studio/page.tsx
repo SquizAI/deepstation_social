@@ -131,9 +131,11 @@ export default function AIStudioPage() {
 
       console.log('[AI Studio] Video job created:', jobId);
 
-      // Poll for job status
+      // Poll for job status - start with more frequent polling, then slow down
+      let pollCount = 0;
       const pollInterval = setInterval(async () => {
         try {
+          pollCount++;
           const statusResponse = await fetch(`/api/ai/video-job-status/${jobId}`);
           if (!statusResponse.ok) {
             throw new Error('Failed to check job status');
@@ -142,11 +144,19 @@ export default function AIStudioPage() {
           const statusData = await statusResponse.json();
           const job = statusData.job;
 
-          console.log('[AI Studio] Job status:', job.status, 'Progress:', job.progress);
+          const statusMessage =
+            job.progress < 10 ? '🔄 Initializing...' :
+            job.progress < 30 ? '🚀 Starting generation...' :
+            job.progress < 50 ? '🎬 Generating frames...' :
+            job.progress < 70 ? '🎨 Processing video...' :
+            job.progress < 90 ? '✨ Adding effects...' : '💾 Finalizing...';
+
+          console.log(`[AI Studio] ${statusMessage} (${job.progress}%) - Poll #${pollCount}`);
           setVideoProgress(job.progress || 0);
 
           if (job.status === 'completed') {
             clearInterval(pollInterval);
+            console.log('✅ Video generation complete!', job.videoUrl);
             setGeneratedVideo({
               url: job.videoUrl,
               thumbnailUrl: job.thumbnailUrl,
@@ -160,6 +170,7 @@ export default function AIStudioPage() {
             setVideoProgress(100);
           } else if (job.status === 'failed') {
             clearInterval(pollInterval);
+            console.error('❌ Video generation failed:', job.errorMessage);
             throw new Error(job.errorMessage || 'Video generation failed');
           }
         } catch (err) {
@@ -168,7 +179,7 @@ export default function AIStudioPage() {
           setError(err instanceof Error ? err.message : 'Unknown error');
           setIsGenerating(false);
         }
-      }, 3000); // Poll every 3 seconds
+      }, pollCount < 10 ? 2000 : 3000); // Poll every 2s for first 10 checks, then every 3s
 
       // Safety timeout (5 minutes)
       setTimeout(() => {
@@ -591,8 +602,11 @@ export default function AIStudioPage() {
                         <div className="flex justify-between text-sm text-slate-400 mb-2">
                           <span>{videoProgress}% Complete</span>
                           <span>
-                            {videoProgress < 30 ? 'Starting...' :
-                             videoProgress < 90 ? 'Generating...' : 'Finalizing...'}
+                            {videoProgress < 10 ? 'Initializing...' :
+                             videoProgress < 30 ? 'Starting generation...' :
+                             videoProgress < 50 ? 'Generating frames...' :
+                             videoProgress < 70 ? 'Processing video...' :
+                             videoProgress < 90 ? 'Adding effects...' : 'Finalizing...'}
                           </span>
                         </div>
                         <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
@@ -601,11 +615,20 @@ export default function AIStudioPage() {
                             style={{ width: `${videoProgress}%` }}
                           ></div>
                         </div>
+                        <div className="text-xs text-slate-500 mt-2 text-center">
+                          {videoProgress < 100 && (
+                            <>Estimated time remaining: {Math.ceil((100 - videoProgress) / 100 * videoDuration * 4)}s</>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2 text-sm text-slate-500">
                         <div className="w-2 h-2 bg-fuchsia-500 rounded-full animate-ping"></div>
-                        <span>Processing with Google Veo 3...</span>
+                        <span>
+                          {videoProgress < 30 ? 'Connecting to Veo 3...' :
+                           videoProgress < 90 ? 'Processing with Google Veo 3...' :
+                           'Saving your video...'}
+                        </span>
                       </div>
                     </div>
                   </div>
