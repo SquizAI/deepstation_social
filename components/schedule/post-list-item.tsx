@@ -112,7 +112,7 @@ export function PostListItem({
           <div className="pt-1">
             <Checkbox
               checked={selected}
-              onCheckedChange={onSelect}
+              onChange={onSelect}
               className="border-white/20"
             />
           </div>
