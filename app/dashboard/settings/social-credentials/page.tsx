@@ -423,7 +423,7 @@ export default function SocialCredentialsPage() {
       <div>
         <h1 className="text-3xl font-bold text-white mb-2">Social Media Credentials</h1>
         <p className="text-white/60">
-          Connect your social media accounts to enable automated posting across platforms
+          Add your API credentials to enable automated posting across platforms. Click &quot;Add API Credentials&quot; for each platform you want to use.
         </p>
       </div>
 
@@ -490,23 +490,34 @@ export default function SocialCredentialsPage() {
                 {/* Action Buttons */}
                 <div className="flex gap-2">
                   {!account.isConnected || account.isExpired ? (
-                    <Button
-                      onClick={() => handleConnect(account.platform)}
-                      disabled={isConnecting}
-                      className={`flex-1 bg-gradient-to-r ${config.gradient} hover:opacity-90 text-white border-0`}
-                    >
-                      {isConnecting ? (
-                        <>
-                          <span className="animate-spin mr-2">⏳</span>
-                          Connecting...
-                        </>
-                      ) : (
-                        <>
-                          <span className="mr-2">🔗</span>
-                          {account.isExpired ? 'Reconnect' : 'Connect'} {config.name}
-                        </>
-                      )}
-                    </Button>
+                    <>
+                      <Button
+                        onClick={() => setCredentialsDialog(account.platform)}
+                        className={`flex-1 bg-gradient-to-r ${config.gradient} hover:opacity-90 text-white border-0`}
+                      >
+                        <span className="mr-2">🔑</span>
+                        Add API Credentials
+                      </Button>
+                      <Button
+                        onClick={() => handleConnect(account.platform)}
+                        disabled={isConnecting}
+                        variant="outline"
+                        className="dark:border-white/20 dark:hover:bg-white/5 dark:text-white"
+                        title="Connect via OAuth (requires app credentials)"
+                      >
+                        {isConnecting ? (
+                          <>
+                            <span className="animate-spin mr-2">⏳</span>
+                            OAuth...
+                          </>
+                        ) : (
+                          <>
+                            <span className="mr-2">🔗</span>
+                            OAuth
+                          </>
+                        )}
+                      </Button>
+                    </>
                   ) : (
                     <>
                       <Button

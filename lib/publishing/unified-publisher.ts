@@ -4,6 +4,7 @@
  */
 
 import { getValidOAuthToken } from '@/lib/auth/oauth-tokens';
+import { getStoredCredentials } from '@/lib/credentials/get-credentials';
 import { Platform } from '@/lib/types/oauth';
 import {
   PublishRequest,
@@ -102,21 +103,49 @@ export async function publishToAllPlatforms(
         continue;
       }
 
-      // Get OAuth token for other platforms
-      const tokenData = await getValidOAuthToken(userId, platform);
-      if (!tokenData) {
-        results.push({
-          success: false,
-          platform,
-          error: `No valid OAuth token found for ${platform}`,
-          errorCode: 'AUTH_ERROR',
-          timestamp: new Date().toISOString(),
-        });
-        continue;
-      }
+      // Get credentials (OAuth or API keys) from secure storage
+      const credentials = await getStoredCredentials(userId, platform);
 
-      accessToken = tokenData.accessToken;
-      platformUserId = tokenData.providerUserId || '';
+      if (!credentials) {
+        // Fallback: Try old OAuth token system for backward compatibility
+        const tokenData = await getValidOAuthToken(userId, platform);
+        if (!tokenData) {
+          results.push({
+            success: false,
+            platform,
+            error: `No credentials found for ${platform}. Please connect your account or add API credentials.`,
+            errorCode: 'AUTH_ERROR',
+            timestamp: new Date().toISOString(),
+          });
+          continue;
+        }
+        accessToken = tokenData.accessToken;
+        platformUserId = tokenData.providerUserId || '';
+      } else {
+        // Use credentials from secure storage
+        if (credentials.credentialType === 'oauth') {
+          accessToken = credentials.credentials.accessToken || '';
+          platformUserId = credentials.metadata?.providerUserId || '';
+        } else if (credentials.credentialType === 'api_key') {
+          // For API keys, the structure depends on the platform
+          // Most platforms store the access token in the credentials object
+          accessToken = credentials.credentials.accessToken ||
+                       credentials.credentials.apiKey ||
+                       credentials.credentials.token || '';
+          platformUserId = credentials.metadata?.userId || '';
+        }
+
+        if (!accessToken) {
+          results.push({
+            success: false,
+            platform,
+            error: `Invalid credentials format for ${platform}`,
+            errorCode: 'AUTH_ERROR',
+            timestamp: new Date().toISOString(),
+          });
+          continue;
+        }
+      }
 
       // Publish to platform with retry
       const publishRequest: PublishRequest = {
