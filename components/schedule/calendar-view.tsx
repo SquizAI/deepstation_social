@@ -180,7 +180,7 @@ export function CalendarView({ posts, onPostClick, onDateChange, onPostReschedul
                   {date.getDate()}
                 </span>
                 {dayPosts.length > 0 && (
-                  <Badge variant="outline" className="text-xs border-white/20 bg-white/5">
+                  <Badge variant="default" className="text-xs border-white/20 bg-white/5">
                     {dayPosts.length}
                   </Badge>
                 )}
