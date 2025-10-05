@@ -72,17 +72,24 @@ export async function POST(request: NextRequest) {
 
     // Trigger background processing via Netlify function
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : 'http://localhost:3055';
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3055';
+      const functionUrl = `${baseUrl}/.netlify/functions/process-video-job`;
 
-      await fetch(`${baseUrl}/.netlify/functions/process-video-job`, {
+      console.log('[Video Async] Triggering background function:', functionUrl);
+
+      const triggerResponse = await fetch(functionUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobId: job.id }),
       });
+
+      if (!triggerResponse.ok) {
+        console.error('[Video Async] Function trigger failed:', triggerResponse.status, await triggerResponse.text());
+      } else {
+        console.log('[Video Async] Background function triggered successfully');
+      }
     } catch (err) {
-      console.warn('[Video Async] Failed to trigger background job:', err);
+      console.error('[Video Async] Failed to trigger background job:', err);
       // Don't fail the request, job will be picked up by cron
     }
 

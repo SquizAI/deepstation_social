@@ -207,11 +207,22 @@ export default function AIStudioPage() {
 
       <div className="relative max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">AI Studio</h1>
-          <p className="text-slate-400">
-            Generate stunning images and videos with Google's latest AI models
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">AI Studio</h1>
+            <p className="text-slate-400">
+              Generate stunning images and videos with Google's latest AI models
+            </p>
+          </div>
+          <a
+            href="/dashboard/ai-history"
+            className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl border border-white/10 transition-all flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            View History
+          </a>
         </div>
 
         {/* Media Type Tabs */}
