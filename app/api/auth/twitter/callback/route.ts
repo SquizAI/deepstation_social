@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const errorMessage = errorDescription || error;
     return NextResponse.redirect(
       new URL(
-        `/dashboard/settings/social-accounts?error=${encodeURIComponent(`Twitter: ${errorMessage}`)}`,
+        `/dashboard/settings/social-credentials?error=${encodeURIComponent(`Twitter: ${errorMessage}`)}`,
         request.url
       )
     );
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     console.error('[Twitter OAuth] No authorization code provided');
     return NextResponse.redirect(
       new URL(
-        '/dashboard/settings/social-accounts?error=Twitter authorization failed: No code provided',
+        '/dashboard/settings/social-credentials?error=Twitter authorization failed: No code provided',
         request.url
       )
     );
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     await cleanupOAuthCookies();
     return NextResponse.redirect(
       new URL(
-        '/dashboard/settings/social-accounts?error=Invalid authentication request',
+        '/dashboard/settings/social-credentials?error=Invalid authentication request',
         request.url
       )
     );
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       await cleanupOAuthCookies();
       return NextResponse.redirect(
         new URL(
-          '/dashboard/settings/social-accounts?error=Invalid authentication request',
+          '/dashboard/settings/social-credentials?error=Invalid authentication request',
           request.url
         )
       );
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
       await cleanupOAuthCookies();
       return NextResponse.redirect(
         new URL(
-          '/dashboard/settings/social-accounts?error=Twitter authentication failed: Missing PKCE verifier',
+          '/dashboard/settings/social-credentials?error=Twitter authentication failed: Missing PKCE verifier',
           request.url
         )
       );
@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
       // Redirect to settings page with success message
       return NextResponse.redirect(
         new URL(
-          '/dashboard/settings/social-accounts?success=Twitter connected successfully',
+          '/dashboard/settings/social-credentials?success=Twitter connected successfully',
           request.url
         )
       );
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
       const errorMsg = tokenError instanceof Error ? tokenError.message : 'Unknown error';
       return NextResponse.redirect(
         new URL(
-          `/dashboard/settings/social-accounts?error=${encodeURIComponent(`Failed to connect Twitter: ${errorMsg}`)}`,
+          `/dashboard/settings/social-credentials?error=${encodeURIComponent(`Failed to connect Twitter: ${errorMsg}`)}`,
           request.url
         )
       );
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(
       new URL(
-        '/dashboard/settings/social-accounts?error=Twitter authentication failed',
+        '/dashboard/settings/social-credentials?error=Twitter authentication failed',
         request.url
       )
     );

@@ -3,21 +3,22 @@ import { SimpleEventCard } from './simple-event-card'
 import Link from 'next/link'
 
 export async function EventsCalendarSection() {
-  const supabase = await createClient()
+  try {
+    const supabase = await createClient()
 
-  // Fetch upcoming public events
-  const { data: events, error } = await supabase
-    .from('events')
-    .select('*')
-    .gte('event_date', new Date().toISOString())
-    .eq('is_published', true)
-    .order('event_date', { ascending: true })
-    .limit(6)
+    // Fetch upcoming public events
+    const { data: events, error } = await supabase
+      .from('events')
+      .select('*')
+      .gte('event_date', new Date().toISOString())
+      .eq('is_published', true)
+      .order('event_date', { ascending: true })
+      .limit(6)
 
-  // Don't show section if no events or error
-  if (error || !events || events.length === 0) {
-    return null
-  }
+    // Don't show section if no events or error
+    if (error || !events || events.length === 0) {
+      return null
+    }
 
   return (
     <section className="relative py-32 border-t border-white/5">
@@ -52,4 +53,8 @@ export async function EventsCalendarSection() {
       </div>
     </section>
   )
+  } catch (error) {
+    console.error('Error loading events calendar section:', error)
+    return null
+  }
 }

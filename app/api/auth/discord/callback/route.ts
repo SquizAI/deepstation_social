@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const errorMessage = errorDescription || error;
     return NextResponse.redirect(
       new URL(
-        `/dashboard/settings/social-accounts?error=${encodeURIComponent(`Discord: ${errorMessage}`)}`,
+        `/dashboard/settings/social-credentials?error=${encodeURIComponent(`Discord: ${errorMessage}`)}`,
         request.url
       )
     );
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     console.error('[Discord OAuth] No authorization code provided');
     return NextResponse.redirect(
       new URL(
-        '/dashboard/settings/social-accounts?error=Discord authorization failed: No code provided',
+        '/dashboard/settings/social-credentials?error=Discord authorization failed: No code provided',
         request.url
       )
     );
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     await cleanupOAuthCookies();
     return NextResponse.redirect(
       new URL(
-        '/dashboard/settings/social-accounts?error=Invalid authentication request',
+        '/dashboard/settings/social-credentials?error=Invalid authentication request',
         request.url
       )
     );
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       await cleanupOAuthCookies();
       return NextResponse.redirect(
         new URL(
-          '/dashboard/settings/social-accounts?error=Invalid authentication request',
+          '/dashboard/settings/social-credentials?error=Invalid authentication request',
           request.url
         )
       );
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
       // Redirect to settings page with success message
       return NextResponse.redirect(
         new URL(
-          '/dashboard/settings/social-accounts?success=Discord connected successfully. You can now post via webhooks.',
+          '/dashboard/settings/social-credentials?success=Discord connected successfully. You can now post via webhooks.',
           request.url
         )
       );
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
       const errorMsg = tokenError instanceof Error ? tokenError.message : 'Unknown error';
       return NextResponse.redirect(
         new URL(
-          `/dashboard/settings/social-accounts?error=${encodeURIComponent(`Failed to connect Discord: ${errorMsg}`)}`,
+          `/dashboard/settings/social-credentials?error=${encodeURIComponent(`Failed to connect Discord: ${errorMsg}`)}`,
           request.url
         )
       );
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(
       new URL(
-        '/dashboard/settings/social-accounts?error=Discord authentication failed',
+        '/dashboard/settings/social-credentials?error=Discord authentication failed',
         request.url
       )
     );

@@ -26,15 +26,15 @@ const settingsTabs: SettingsTab[] = [
     ),
   },
   {
-    name: 'Social Connections',
-    href: '/dashboard/settings/social',
+    name: 'Credentials',
+    href: '/dashboard/settings/social-credentials',
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={2}
-          d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
         />
       </svg>
     ),

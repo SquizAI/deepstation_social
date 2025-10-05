@@ -115,9 +115,9 @@ export function AnalyticsClient({ userId }: AnalyticsClientProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
             <DateRangePicker
@@ -136,6 +136,7 @@ export function AnalyticsClient({ userId }: AnalyticsClientProps) {
             <Select
               value={platform}
               onChange={(e) => setPlatform(e.target.value as Platform | 'all')}
+              className="dark:bg-white/5 dark:border-white/10 dark:text-white"
             >
               <option value="all">All Platforms</option>
               <option value="linkedin">LinkedIn</option>
@@ -147,7 +148,7 @@ export function AnalyticsClient({ userId }: AnalyticsClientProps) {
             <Button
               onClick={handleExport}
               disabled={exporting}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:opacity-90 text-white border-0"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

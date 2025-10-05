@@ -16,27 +16,35 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS public.oauth_tokens (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  platform TEXT NOT NULL CHECK (platform IN ('linkedin', 'instagram', 'twitter', 'discord')),
-  access_token TEXT NOT NULL,
+  platform TEXT NOT NULL CHECK (platform IN ('linkedin', 'instagram', 'twitter', 'discord', 'resend', 'sendgrid')),
+  access_token TEXT,
   refresh_token TEXT,
   expires_at TIMESTAMPTZ,
   platform_user_id TEXT,
   provider_user_id TEXT,
   is_active BOOLEAN NOT NULL DEFAULT true,
+  credential_type TEXT DEFAULT 'oauth' CHECK (credential_type IN ('oauth', 'api_key')),
+  credentials JSONB DEFAULT '{}'::jsonb,
+  metadata JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, platform, platform_user_id)
 );
 
-COMMENT ON TABLE public.oauth_tokens IS 'Stores encrypted OAuth tokens for social media platform integrations';
-COMMENT ON COLUMN public.oauth_tokens.platform IS 'Social media platform: linkedin, instagram, twitter, or discord';
-COMMENT ON COLUMN public.oauth_tokens.access_token IS 'Encrypted access token';
-COMMENT ON COLUMN public.oauth_tokens.refresh_token IS 'Encrypted refresh token (if available)';
+COMMENT ON TABLE public.oauth_tokens IS 'Stores OAuth tokens and API credentials for platform integrations';
+COMMENT ON COLUMN public.oauth_tokens.platform IS 'Platform: linkedin, instagram, twitter, discord, resend, or sendgrid';
+COMMENT ON COLUMN public.oauth_tokens.access_token IS 'Encrypted OAuth access token (for OAuth platforms)';
+COMMENT ON COLUMN public.oauth_tokens.refresh_token IS 'Encrypted OAuth refresh token (if available)';
 COMMENT ON COLUMN public.oauth_tokens.expires_at IS 'Token expiration timestamp';
 COMMENT ON COLUMN public.oauth_tokens.provider_user_id IS 'User ID from the OAuth provider (optional)';
+COMMENT ON COLUMN public.oauth_tokens.credential_type IS 'Type of credential: oauth (from OAuth flow) or api_key (user-provided)';
+COMMENT ON COLUMN public.oauth_tokens.credentials IS 'Platform-specific credential data (client_id, client_secret, bearer_token, etc.)';
+COMMENT ON COLUMN public.oauth_tokens.metadata IS 'Additional metadata (rate limits, custom settings, etc.)';
 
 CREATE INDEX IF NOT EXISTS idx_oauth_tokens_user_id ON public.oauth_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_oauth_tokens_platform ON public.oauth_tokens(platform);
+CREATE INDEX IF NOT EXISTS idx_oauth_tokens_credential_type ON public.oauth_tokens(credential_type);
+CREATE INDEX IF NOT EXISTS idx_oauth_tokens_user_platform ON public.oauth_tokens(user_id, platform);
 
 -- ============================================================================
 -- SCHEDULED POSTS TABLE

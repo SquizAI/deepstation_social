@@ -549,8 +549,8 @@ export default function NewPostPage() {
                     <div>
                       <p className="text-sm font-medium text-yellow-300">Some platforms are not connected</p>
                       <p className="text-sm text-yellow-400/80 mt-1">
-                        <a href="/dashboard/accounts" className="underline hover:text-yellow-300">
-                          Connect your social accounts
+                        <a href="/dashboard/settings/social-credentials" className="underline hover:text-yellow-300">
+                          Connect your platforms
                         </a>
                         {' '}to enable posting to all platforms.
                       </p>

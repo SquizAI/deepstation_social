@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getEmailCredentials } from '@/lib/credentials/get-credentials'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,6 +19,16 @@ export async function POST(request: NextRequest) {
 
     if (!campaign_id) {
       return NextResponse.json({ error: 'Campaign ID required' }, { status: 400 })
+    }
+
+    // Get email credentials
+    const emailCreds = await getEmailCredentials(user.id)
+
+    if (!emailCreds) {
+      return NextResponse.json(
+        { error: 'No email service configured. Please add Resend or SendGrid credentials in settings.' },
+        { status: 400 }
+      )
     }
 
     // Get campaign details
@@ -82,17 +93,59 @@ export async function POST(request: NextRequest) {
           .replace(/{{email}}/g, subscriber.email)
           .replace(/{{unsubscribe_url}}/g, `${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe/${subscriber.id}`)
 
-        // TODO: Integrate with actual email service (Resend, SendGrid, etc.)
-        // const resend = new Resend(process.env.RESEND_API_KEY)
-        // await resend.emails.send({
-        //   from: 'DeepStation <noreply@deepstation.ai>',
-        //   to: subscriber.email,
-        //   subject: campaign.subject,
-        //   html: personalizedContent,
-        // })
+        // Send email using configured service
+        if (emailCreds.provider === 'resend') {
+          // Resend integration
+          const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${emailCreds.apiKey}`,
+            },
+            body: JSON.stringify({
+              from: emailCreds.fromName
+                ? `${emailCreds.fromName} <${emailCreds.fromEmail}>`
+                : emailCreds.fromEmail,
+              to: subscriber.email,
+              subject: campaign.subject,
+              html: personalizedContent,
+            }),
+          })
 
-        // For now, just log
-        console.log(`Sending email to ${subscriber.email}`)
+          if (!response.ok) {
+            throw new Error(`Resend API error: ${response.statusText}`)
+          }
+        } else if (emailCreds.provider === 'sendgrid') {
+          // SendGrid integration
+          const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${emailCreds.apiKey}`,
+            },
+            body: JSON.stringify({
+              personalizations: [{
+                to: [{ email: subscriber.email }],
+              }],
+              from: {
+                email: emailCreds.fromEmail,
+                name: emailCreds.fromName || 'DeepStation',
+              },
+              subject: campaign.subject,
+              content: [{
+                type: 'text/html',
+                value: personalizedContent,
+              }],
+            }),
+          })
+
+          if (!response.ok) {
+            const error = await response.text()
+            throw new Error(`SendGrid API error: ${error}`)
+          }
+        }
+
+        console.log(`Sent email to ${subscriber.email} via ${emailCreds.provider}`)
 
         // Record successful send
         await supabase.from('campaign_recipients').insert({

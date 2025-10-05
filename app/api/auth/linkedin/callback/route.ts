@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const errorMessage = errorDescription || error;
     return NextResponse.redirect(
       new URL(
-        `/dashboard/settings/social-accounts?error=${encodeURIComponent(`LinkedIn: ${errorMessage}`)}`,
+        `/dashboard/settings/social-credentials?error=${encodeURIComponent(`LinkedIn: ${errorMessage}`)}`,
         request.url
       )
     );
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     console.error('[LinkedIn OAuth] No authorization code provided');
     return NextResponse.redirect(
       new URL(
-        '/dashboard/settings/social-accounts?error=LinkedIn authorization failed: No code provided',
+        '/dashboard/settings/social-credentials?error=LinkedIn authorization failed: No code provided',
         request.url
       )
     );
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     await cleanupOAuthCookies();
     return NextResponse.redirect(
       new URL(
-        '/dashboard/settings/social-accounts?error=Invalid authentication request',
+        '/dashboard/settings/social-credentials?error=Invalid authentication request',
         request.url
       )
     );
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       await cleanupOAuthCookies();
       return NextResponse.redirect(
         new URL(
-          '/dashboard/settings/social-accounts?error=Invalid authentication request',
+          '/dashboard/settings/social-credentials?error=Invalid authentication request',
           request.url
         )
       );
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
       // Redirect to settings page with success message
       return NextResponse.redirect(
         new URL(
-          '/dashboard/settings/social-accounts?success=LinkedIn connected successfully',
+          '/dashboard/settings/social-credentials?success=LinkedIn connected successfully',
           request.url
         )
       );
@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
       const errorMsg = tokenError instanceof Error ? tokenError.message : 'Unknown error';
       return NextResponse.redirect(
         new URL(
-          `/dashboard/settings/social-accounts?error=${encodeURIComponent(`Failed to connect LinkedIn: ${errorMsg}`)}`,
+          `/dashboard/settings/social-credentials?error=${encodeURIComponent(`Failed to connect LinkedIn: ${errorMsg}`)}`,
           request.url
         )
       );
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(
       new URL(
-        '/dashboard/settings/social-accounts?error=LinkedIn authentication failed',
+        '/dashboard/settings/social-credentials?error=LinkedIn authentication failed',
         request.url
       )
     );

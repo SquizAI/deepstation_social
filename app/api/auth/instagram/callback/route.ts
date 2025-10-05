@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const errorMessage = errorDescription || error;
     return NextResponse.redirect(
       new URL(
-        `/dashboard/settings/social-accounts?error=${encodeURIComponent(`Instagram: ${errorMessage}`)}`,
+        `/dashboard/settings/social-credentials?error=${encodeURIComponent(`Instagram: ${errorMessage}`)}`,
         request.url
       )
     );
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     console.error('[Instagram OAuth] No authorization code provided');
     return NextResponse.redirect(
       new URL(
-        '/dashboard/settings/social-accounts?error=Instagram authorization failed: No code provided',
+        '/dashboard/settings/social-credentials?error=Instagram authorization failed: No code provided',
         request.url
       )
     );
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     await cleanupOAuthCookies();
     return NextResponse.redirect(
       new URL(
-        '/dashboard/settings/social-accounts?error=Invalid authentication request',
+        '/dashboard/settings/social-credentials?error=Invalid authentication request',
         request.url
       )
     );
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       await cleanupOAuthCookies();
       return NextResponse.redirect(
         new URL(
-          '/dashboard/settings/social-accounts?error=Invalid authentication request',
+          '/dashboard/settings/social-credentials?error=Invalid authentication request',
           request.url
         )
       );
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
       // Redirect to settings page with success message
       return NextResponse.redirect(
         new URL(
-          '/dashboard/settings/social-accounts?success=Instagram connected successfully. Note: Business account required for posting.',
+          '/dashboard/settings/social-credentials?success=Instagram connected successfully. Note: Business account required for posting.',
           request.url
         )
       );
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.redirect(
         new URL(
-          `/dashboard/settings/social-accounts?error=${encodeURIComponent(userFriendlyError)}`,
+          `/dashboard/settings/social-credentials?error=${encodeURIComponent(userFriendlyError)}`,
           request.url
         )
       );
@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(
       new URL(
-        '/dashboard/settings/social-accounts?error=Instagram authentication failed',
+        '/dashboard/settings/social-credentials?error=Instagram authentication failed',
         request.url
       )
     );
