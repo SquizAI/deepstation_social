@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const results = { ...post.publish_results } || {}
+    const results = post.publish_results ? { ...post.publish_results } : {}
 
     // Retry publishing to failed platforms
     for (const account of accounts) {
