@@ -253,13 +253,24 @@ export default function SocialCredentialsPage() {
     try {
       setTestingPlatform(platform)
 
-      // TODO: Implement test connection endpoint
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await fetch('/api/auth/test-connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ platform }),
+      })
 
-      showNotification('success', `${platformConfigs[platform].name} connection is working`)
-    } catch (error) {
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Connection test failed')
+      }
+
+      showNotification('success', data.message || `${platformConfigs[platform].name} connection is working`)
+    } catch (error: any) {
       console.error('Error testing connection:', error)
-      showNotification('error', `Connection test failed for ${platformConfigs[platform].name}`)
+      showNotification('error', error.message || `Connection test failed for ${platformConfigs[platform].name}`)
     } finally {
       setTestingPlatform(null)
     }
@@ -267,15 +278,43 @@ export default function SocialCredentialsPage() {
 
   const handleSaveCredentials = async (platform: Platform) => {
     try {
-      // TODO: Implement API endpoint to save custom credentials
-      console.log('Saving credentials for', platform, credentials)
+      // Validate required fields
+      const requiredFields = platformConfigs[platform].credentialFields.filter(
+        f => !f.label.includes('Optional')
+      )
+      const missingFields = requiredFields.filter(f => !credentials[f.name]?.trim())
+
+      if (missingFields.length > 0) {
+        showNotification('error', `Please fill in all required fields: ${missingFields.map(f => f.label).join(', ')}`)
+        return
+      }
+
+      const response = await fetch('/api/auth/credentials', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          platform,
+          credentials,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save credentials')
+      }
 
       showNotification('success', 'API credentials saved successfully')
       setCredentialsDialog(null)
       setCredentials({})
-    } catch (error) {
+
+      // Refresh accounts to show updated connection status
+      await fetchAccounts()
+    } catch (error: any) {
       console.error('Error saving credentials:', error)
-      showNotification('error', 'Failed to save API credentials')
+      showNotification('error', error.message || 'Failed to save API credentials')
     }
   }
 

@@ -32,11 +32,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all OAuth tokens for user
+    // Get all OAuth tokens and API credentials for user
     const { data: tokens, error } = await supabase
       .from('oauth_tokens')
-      .select('platform, provider_user_id, expires_at, created_at, updated_at')
-      .eq('user_id', session.user.id);
+      .select('platform, provider_user_id, expires_at, created_at, updated_at, credential_type, is_active')
+      .eq('user_id', session.user.id)
+      .eq('is_active', true);
 
     if (error) {
       console.error('Error fetching OAuth tokens:', error);
