@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
-import { MetricsCard } from '@/components/analytics/metrics-card'
 import { LineChart } from '@/components/analytics/line-chart'
 import { BarChart } from '@/components/analytics/bar-chart'
 import { Heatmap } from '@/components/analytics/heatmap'
