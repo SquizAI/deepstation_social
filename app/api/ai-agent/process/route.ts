@@ -311,10 +311,31 @@ Remember: Always include ALL previously filled fields in your formData output, e
         const rawResponse = assistantMessage.replace(/<formData>[\s\S]*?<\/formData>/, '').trim()
         const cleanedResponse = cleanResponseText(rawResponse)
 
+        // Determine next field suggestion
+        let nextField = null
+        if (formData && fieldSchema && fieldSchema.length > 0) {
+          const allFilledFields = { ...accumulatedData, ...formData }
+          const nextRequiredField = fieldSchema.find(
+            (f: any) => f.required && !allFilledFields[f.name]
+          )
+
+          if (nextRequiredField) {
+            nextField = nextRequiredField.name
+          } else {
+            const nextOptionalField = fieldSchema.find(
+              (f: any) => !f.required && !allFilledFields[f.name]
+            )
+            if (nextOptionalField) {
+              nextField = nextOptionalField.name
+            }
+          }
+        }
+
         return NextResponse.json({
           success: true,
           response: cleanedResponse,
           formData,
+          nextField,
         })
       }
     }
