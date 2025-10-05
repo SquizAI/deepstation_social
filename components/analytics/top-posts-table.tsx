@@ -19,8 +19,8 @@ export function TopPostsTable({ posts, title }: TopPostsTableProps) {
 
   if (!posts || posts.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-8">
-        <p className="text-center text-gray-500">No posts available</p>
+      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8">
+        <p className="text-center text-slate-400">No posts available</p>
       </div>
     )
   }
@@ -43,7 +43,7 @@ export function TopPostsTable({ posts, title }: TopPostsTableProps) {
 
   const SortIcon = ({ active, direction }: { active: boolean; direction: SortDirection }) => (
     <svg
-      className={`w-4 h-4 ml-1 inline ${active ? 'text-blue-600' : 'text-gray-400'}`}
+      className={`w-4 h-4 ml-1 inline ${active ? 'text-fuchsia-400' : 'text-slate-400'}`}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -64,35 +64,35 @@ export function TopPostsTable({ posts, title }: TopPostsTableProps) {
 
   const getPlatformBadgeColor = (platform: string) => {
     const colors: Record<string, string> = {
-      linkedin: 'bg-blue-100 text-blue-700',
-      instagram: 'bg-pink-100 text-pink-700',
-      twitter: 'bg-sky-100 text-sky-700',
-      discord: 'bg-indigo-100 text-indigo-700'
+      linkedin: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+      instagram: 'bg-pink-500/20 text-pink-400 border border-pink-500/30',
+      twitter: 'bg-sky-500/20 text-sky-400 border border-sky-500/30',
+      discord: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
     }
-    return colors[platform] || 'bg-gray-100 text-gray-700'
+    return colors[platform] || 'bg-white/10 text-slate-400 border border-white/10'
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-all">
       {title && (
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <div className="px-6 py-4 border-b border-white/10">
+          <h3 className="text-lg font-semibold text-white">{title}</h3>
         </div>
       )}
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-white/10">
+          <thead className="bg-white/5">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                 Post
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                 Date
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-white/5"
                 onClick={() => handleSort('total_engagement')}
               >
                 Engagement
@@ -100,7 +100,7 @@ export function TopPostsTable({ posts, title }: TopPostsTableProps) {
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-white/5"
                 onClick={() => handleSort('total_likes')}
               >
                 Likes
@@ -108,7 +108,7 @@ export function TopPostsTable({ posts, title }: TopPostsTableProps) {
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-white/5"
                 onClick={() => handleSort('total_shares')}
               >
                 Shares
@@ -116,7 +116,7 @@ export function TopPostsTable({ posts, title }: TopPostsTableProps) {
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-white/5"
                 onClick={() => handleSort('total_comments')}
               >
                 Comments
@@ -124,7 +124,7 @@ export function TopPostsTable({ posts, title }: TopPostsTableProps) {
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-white/5"
                 onClick={() => handleSort('success_rate')}
               >
                 Success Rate
@@ -132,12 +132,12 @@ export function TopPostsTable({ posts, title }: TopPostsTableProps) {
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="divide-y divide-white/10">
             {sortedPosts.map((post) => (
-              <tr key={post.post_id} className="hover:bg-gray-50">
+              <tr key={post.post_id} className="hover:bg-white/5 transition-colors">
                 <td className="px-6 py-4">
                   <div className="max-w-xs">
-                    <p className="text-sm text-gray-900 line-clamp-2">
+                    <p className="text-sm text-white line-clamp-2">
                       {getPreviewContent(post)}
                     </p>
                     <div className="mt-1 flex gap-1">
@@ -152,28 +152,28 @@ export function TopPostsTable({ posts, title }: TopPostsTableProps) {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {format(new Date(post.posted_at), 'MMM d, yyyy')}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
                   {post.total_engagement.toLocaleString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {post.total_likes.toLocaleString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {post.total_shares.toLocaleString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {post.total_comments.toLocaleString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                     post.success_rate === 100
-                      ? 'bg-green-100 text-green-800'
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                       : post.success_rate >= 50
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-red-100 text-red-800'
+                      ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                      : 'bg-red-500/20 text-red-400 border border-red-500/30'
                   }`}>
                     {post.success_rate}%
                   </span>

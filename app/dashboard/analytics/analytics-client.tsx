@@ -161,58 +161,80 @@ export function AnalyticsClient({ userId }: AnalyticsClientProps) {
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricsCard
-          title="Total Posts"
-          value={summary?.total_posts || 0}
-          subtitle={`${summary?.published_posts || 0} published`}
-          color="blue"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-            </svg>
-          }
-        />
+        <div className="bg-white/5 backdrop-blur-sm border border-blue-500/20 rounded-xl p-6 hover:bg-white/10 transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              </svg>
+            </div>
+          </div>
+          <h3 className="text-sm font-medium text-slate-400 mb-1">Total Posts</h3>
+          <p className="text-3xl font-bold text-white mb-1">{summary?.total_posts || 0}</p>
+          <p className="text-xs text-slate-500">{summary?.published_posts || 0} published</p>
+        </div>
 
-        <MetricsCard
-          title="Total Engagement"
-          value={summary?.total_engagement?.toLocaleString() || 0}
-          subtitle="Likes, shares & comments"
-          color="green"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          }
-        />
+        <div className="bg-white/5 backdrop-blur-sm border border-green-500/20 rounded-xl p-6 hover:bg-white/10 transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </div>
+          </div>
+          <h3 className="text-sm font-medium text-slate-400 mb-1">Total Engagement</h3>
+          <p className="text-3xl font-bold text-white mb-1">{summary?.total_engagement?.toLocaleString() || 0}</p>
+          <p className="text-xs text-slate-500">Likes, shares & comments</p>
+        </div>
 
-        <MetricsCard
-          title="Avg Engagement"
-          value={summary?.avg_engagement_per_post?.toFixed(1) || '0.0'}
-          subtitle="Per post"
-          color="purple"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          }
-        />
+        <div className="bg-white/5 backdrop-blur-sm border border-purple-500/20 rounded-xl p-6 hover:bg-white/10 transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+          </div>
+          <h3 className="text-sm font-medium text-slate-400 mb-1">Avg Engagement</h3>
+          <p className="text-3xl font-bold text-white mb-1">{summary?.avg_engagement_per_post?.toFixed(1) || '0.0'}</p>
+          <p className="text-xs text-slate-500">Per post</p>
+        </div>
 
-        <MetricsCard
-          title="Success Rate"
-          value={`${summary?.success_rate?.toFixed(1) || '0.0'}%`}
-          subtitle={`${summary?.failed_posts || 0} failed`}
-          color={summary?.success_rate >= 90 ? 'green' : summary?.success_rate >= 70 ? 'orange' : 'red'}
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
-        />
+        <div className={`bg-white/5 backdrop-blur-sm border ${
+          summary?.success_rate >= 90
+            ? 'border-green-500/20'
+            : summary?.success_rate >= 70
+            ? 'border-orange-500/20'
+            : 'border-red-500/20'
+        } rounded-xl p-6 hover:bg-white/10 transition-all`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className={`w-12 h-12 ${
+              summary?.success_rate >= 90
+                ? 'bg-green-500/20'
+                : summary?.success_rate >= 70
+                ? 'bg-orange-500/20'
+                : 'bg-red-500/20'
+            } rounded-lg flex items-center justify-center`}>
+              <svg className={`w-6 h-6 ${
+                summary?.success_rate >= 90
+                  ? 'text-green-400'
+                  : summary?.success_rate >= 70
+                  ? 'text-orange-400'
+                  : 'text-red-400'
+              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <h3 className="text-sm font-medium text-slate-400 mb-1">Success Rate</h3>
+          <p className="text-3xl font-bold text-white mb-1">{summary?.success_rate?.toFixed(1) || '0.0'}%</p>
+          <p className="text-xs text-slate-500">{summary?.failed_posts || 0} failed</p>
+        </div>
       </div>
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all">
           <LineChart
             data={postsOverTime}
             title="Posts Over Time"
@@ -220,7 +242,7 @@ export function AnalyticsClient({ userId }: AnalyticsClientProps) {
           />
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all">
           <BarChart
             data={platformPerformance}
             title="Engagement by Platform"
@@ -231,7 +253,7 @@ export function AnalyticsClient({ userId }: AnalyticsClientProps) {
       </div>
 
       {/* Best Posting Times Heatmap */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all">
         <Heatmap
           data={postingTimes}
           title="Best Posting Times"
@@ -246,67 +268,67 @@ export function AnalyticsClient({ userId }: AnalyticsClientProps) {
 
       {/* Platform Performance Details */}
       {platformPerformance.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Platform Performance Details</h3>
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all">
+          <h3 className="text-lg font-semibold text-white mb-4">Platform Performance Details</h3>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-white/10">
+              <thead className="bg-white/5">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Platform
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Posts
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Success Rate
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Likes
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Shares
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Comments
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Avg Engagement
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-white/10">
                 {platformPerformance.map((p) => (
-                  <tr key={p.platform}>
+                  <tr key={p.platform} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-900 capitalize">
+                      <span className="text-sm font-medium text-white capitalize">
                         {p.platform}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                       {p.total_posts}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         p.success_rate >= 90
-                          ? 'bg-green-100 text-green-800'
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                           : p.success_rate >= 70
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
+                          ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                          : 'bg-red-500/20 text-red-400 border border-red-500/30'
                       }`}>
                         {p.success_rate}%
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                       {p.total_likes.toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                       {p.total_shares.toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                       {p.total_comments.toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
                       {p.avg_engagement_per_post.toFixed(1)}
                     </td>
                   </tr>
@@ -319,22 +341,24 @@ export function AnalyticsClient({ userId }: AnalyticsClientProps) {
 
       {/* Empty State */}
       {!loading && (!summary || summary.total_posts === 0) && (
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <svg
-            className="mx-auto h-12 w-12 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-            />
-          </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No analytics data</h3>
-          <p className="mt-1 text-sm text-gray-500">
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-12 text-center hover:bg-white/10 transition-all">
+          <div className="w-16 h-16 mx-auto bg-fuchsia-500/20 rounded-full flex items-center justify-center mb-4">
+            <svg
+              className="h-8 w-8 text-fuchsia-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">No analytics data</h3>
+          <p className="text-sm text-slate-400">
             Start publishing posts to see your analytics here.
           </p>
         </div>

@@ -39,7 +39,7 @@ export default function AIStudioPage() {
   const [videoPrompt, setVideoPrompt] = useState('');
   const [videoResolution, setVideoResolution] = useState<'720p' | '1080p'>('1080p');
   const [videoDuration, setVideoDuration] = useState(5);
-  const [videoAspectRatio, setVideoAspectRatio] = useState<'16:9' | '9:16' | '1:1'>('16:9');
+  const [videoAspectRatio, setVideoAspectRatio] = useState<'16:9' | '9:16'>('16:9');
   const [videoStyle, setVideoStyle] = useState<'cinematic' | 'documentary' | 'animation' | 'realistic'>('cinematic');
   const [withAudio, setWithAudio] = useState(false);
 
@@ -433,8 +433,8 @@ export default function AIStudioPage() {
 
                 <div>
                   <Label className="text-slate-300 mb-2 block">Aspect Ratio</Label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {(['16:9', '9:16', '1:1'] as const).map((ratio) => (
+                  <div className="grid grid-cols-2 gap-3">
+                    {(['16:9', '9:16'] as const).map((ratio) => (
                       <button
                         key={ratio}
                         onClick={() => setVideoAspectRatio(ratio)}

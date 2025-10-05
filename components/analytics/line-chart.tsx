@@ -16,8 +16,8 @@ interface LineChartProps {
 export function LineChart({ data, title, height = 300 }: LineChartProps) {
   if (!data || data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-        <p className="text-gray-500">No data available</p>
+      <div className="flex items-center justify-center h-64 bg-white/5 rounded-lg">
+        <p className="text-slate-400">No data available</p>
       </div>
     )
   }
@@ -31,52 +31,55 @@ export function LineChart({ data, title, height = 300 }: LineChartProps) {
   return (
     <div className="w-full">
       {title && (
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">{title}</h3>
       )}
       <ResponsiveContainer width="100%" height={height}>
         <RechartsLineChart
           data={chartData}
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
           <XAxis
             dataKey="formattedDate"
-            stroke="#6b7280"
-            style={{ fontSize: '12px' }}
+            stroke="rgba(255, 255, 255, 0.5)"
+            style={{ fontSize: '12px', fill: '#94a3b8' }}
           />
           <YAxis
-            stroke="#6b7280"
-            style={{ fontSize: '12px' }}
+            stroke="rgba(255, 255, 255, 0.5)"
+            style={{ fontSize: '12px', fill: '#94a3b8' }}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e5e7eb',
+              backgroundColor: 'rgba(15, 23, 42, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '8px',
-              padding: '12px'
+              padding: '12px',
+              backdropFilter: 'blur(8px)'
             }}
-            labelStyle={{ color: '#111827', fontWeight: 600, marginBottom: '4px' }}
+            labelStyle={{ color: '#ffffff', fontWeight: 600, marginBottom: '4px' }}
+            itemStyle={{ color: '#cbd5e1' }}
           />
           <Legend
             wrapperStyle={{
-              paddingTop: '20px'
+              paddingTop: '20px',
+              color: '#cbd5e1'
             }}
           />
           <Line
             type="monotone"
             dataKey="count"
-            stroke="#3b82f6"
+            stroke="#60a5fa"
             strokeWidth={2}
-            dot={{ fill: '#3b82f6', r: 4 }}
+            dot={{ fill: '#60a5fa', r: 4 }}
             activeDot={{ r: 6 }}
             name="Posts"
           />
           <Line
             type="monotone"
             dataKey="engagement"
-            stroke="#10b981"
+            stroke="#34d399"
             strokeWidth={2}
-            dot={{ fill: '#10b981', r: 4 }}
+            dot={{ fill: '#34d399', r: 4 }}
             activeDot={{ r: 6 }}
             name="Engagement"
           />

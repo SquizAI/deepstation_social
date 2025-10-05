@@ -9,7 +9,7 @@ export interface Veo3VideoOptions {
   prompt: string;
   resolution: '720p' | '1080p';
   duration: number; // seconds (1-8)
-  aspectRatio?: '16:9' | '9:16' | '1:1' | '4:3';
+  aspectRatio?: '16:9' | '9:16'; // Veo 3 only supports 16:9 (landscape) and 9:16 (vertical)
   style?: 'cinematic' | 'documentary' | 'animation' | 'realistic';
   withAudio?: boolean;
   audioPrompt?: string;
@@ -323,7 +323,7 @@ export class Veo3Workflows {
         prompt: scene,
         duration: 3,
         resolution: '1080p',
-        aspectRatio: '1:1',
+        aspectRatio: '16:9', // Changed from '1:1' - Veo 3 only supports 16:9 and 9:16
         withAudio: false,
         fps: 30,
       });
