@@ -51,7 +51,7 @@ export function AIPostSuggestions({
       // Fetch user's recent successful posts for context
       const { data: { user } } = await supabase.auth.getUser()
 
-      let recentPosts = []
+      let recentPosts: any[] = []
       if (user) {
         const { data } = await supabase
           .from('scheduled_posts')
