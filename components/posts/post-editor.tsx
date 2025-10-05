@@ -54,7 +54,10 @@ export function PostEditor({
 
   const [activeTab, setActiveTab] = React.useState<keyof PostContent>('linkedin')
   const [isSaving, setIsSaving] = React.useState(false)
+  const [lastSaved, setLastSaved] = React.useState<Date | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false)
   const fileInputRefs = React.useRef<Record<string, HTMLInputElement | null>>({})
+  const autoSaveTimerRef = React.useRef<NodeJS.Timeout | null>(null)
 
   const platforms = [
     { key: 'linkedin' as const, label: 'LinkedIn', icon: '💼' },
@@ -67,12 +70,44 @@ export function PostEditor({
     const newContent = { ...content, [platform]: value }
     setContent(newContent)
     onChange?.(newContent)
+    setHasUnsavedChanges(true)
+
+    // Trigger auto-save after 30 seconds of no changes
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current)
+    }
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleAutoSave(newContent)
+    }, 30000) // 30 seconds
   }
+
+  const handleAutoSave = async (contentToSave: PostContent) => {
+    try {
+      await onSave(contentToSave)
+      setLastSaved(new Date())
+      setHasUnsavedChanges(false)
+      console.log('[PostEditor] Auto-saved draft')
+    } catch (error) {
+      console.error('[PostEditor] Auto-save failed:', error)
+    }
+  }
+
+  // Cleanup auto-save timer on unmount
+  React.useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+      }
+    }
+  }, [])
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
       await onSave(content)
+      setLastSaved(new Date())
+      setHasUnsavedChanges(false)
     } finally {
       setIsSaving(false)
     }
@@ -102,6 +137,28 @@ export function PostEditor({
 
   return (
     <div className="space-y-4">
+      {/* Auto-save indicator */}
+      {lastSaved && (
+        <div className="flex items-center justify-between text-xs text-slate-400">
+          <div className="flex items-center gap-2">
+            {hasUnsavedChanges ? (
+              <>
+                <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+                <span>Unsaved changes</span>
+              </>
+            ) : (
+              <>
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                <span>Last saved: {lastSaved.toLocaleTimeString()}</span>
+              </>
+            )}
+          </div>
+          {hasUnsavedChanges && (
+            <span className="text-yellow-400">Auto-save in 30s</span>
+          )}
+        </div>
+      )}
+
       <Tabs defaultValue="linkedin" onValueChange={(value) => setActiveTab(value as keyof PostContent)}>
         <TabsList className="w-full justify-start overflow-x-auto">
           {platforms.map(({ key, label, icon }) => (
@@ -144,11 +201,13 @@ export function PostEditor({
 
                 <div className="relative">
                   <Textarea
+                    name={`content_${key}`}
+                    data-platform={key}
                     value={content[key]}
                     onChange={(e) => handleContentChange(key, e.target.value)}
                     rows={8}
                     placeholder={`Enter your ${label} post content here...`}
-                    className={charInfo.isOverLimit ? 'border-red-500 focus:ring-red-500' : ''}
+                    className={`transition-all ${charInfo.isOverLimit ? 'border-red-500 focus:ring-red-500' : ''}`}
                   />
 
                   {/* Character indicator bar */}

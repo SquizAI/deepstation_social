@@ -49,6 +49,8 @@ export default function AIStudioPage() {
   const [error, setError] = useState<string | null>(null);
   const [cost, setCost] = useState<number>(0);
   const [generationTime, setGenerationTime] = useState<number>(0);
+  const [videoJobId, setVideoJobId] = useState<string | null>(null);
+  const [videoProgress, setVideoProgress] = useState<number>(0);
 
   const generateImage = async () => {
     if (!prompt.trim()) {
@@ -101,8 +103,10 @@ export default function AIStudioPage() {
       setIsGenerating(true);
       setError(null);
       setGeneratedVideo(null);
+      setVideoProgress(0);
 
-      const response = await fetch('/api/ai/generate-video', {
+      // Create async video generation job
+      const response = await fetch('/api/ai/generate-video-async', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -118,19 +122,66 @@ export default function AIStudioPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to generate video');
+        throw new Error(data.error || 'Failed to start video generation');
       }
 
       const data = await response.json();
-      console.log('[AI Studio] Video generation response:', data);
-      console.log('[AI Studio] Video data:', data.video);
-      setGeneratedVideo(data.video);
-      setCost(data.cost || 0);
-      setGenerationTime(data.generationTime || 0);
+      const jobId = data.jobId;
+      setVideoJobId(jobId);
+
+      console.log('[AI Studio] Video job created:', jobId);
+
+      // Poll for job status
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusResponse = await fetch(`/api/ai/video-job-status/${jobId}`);
+          if (!statusResponse.ok) {
+            throw new Error('Failed to check job status');
+          }
+
+          const statusData = await statusResponse.json();
+          const job = statusData.job;
+
+          console.log('[AI Studio] Job status:', job.status, 'Progress:', job.progress);
+          setVideoProgress(job.progress || 0);
+
+          if (job.status === 'completed') {
+            clearInterval(pollInterval);
+            setGeneratedVideo({
+              url: job.videoUrl,
+              thumbnailUrl: job.thumbnailUrl,
+              duration: job.duration,
+              resolution: job.resolution,
+              hasAudio: job.hasAudio,
+            });
+            setCost(job.cost || 0);
+            setGenerationTime(job.generationTime || 0);
+            setIsGenerating(false);
+            setVideoProgress(100);
+          } else if (job.status === 'failed') {
+            clearInterval(pollInterval);
+            throw new Error(job.errorMessage || 'Video generation failed');
+          }
+        } catch (err) {
+          console.error('[AI Studio] Polling error:', err);
+          clearInterval(pollInterval);
+          setError(err instanceof Error ? err.message : 'Unknown error');
+          setIsGenerating(false);
+        }
+      }, 3000); // Poll every 3 seconds
+
+      // Safety timeout (5 minutes)
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (isGenerating) {
+          setError('Video generation timed out. Please try again.');
+          setIsGenerating(false);
+        }
+      }, 5 * 60 * 1000);
+
     } catch (err) {
       console.error('[AI Studio] Video generation error:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
       setIsGenerating(false);
     }
   };
@@ -534,6 +585,24 @@ export default function AIStudioPage() {
                       <p className="text-slate-400 text-center mb-4">
                         This may take up to 2 minutes. Please be patient while Veo 3 creates your video.
                       </p>
+
+                      {/* Progress Bar */}
+                      <div className="w-full max-w-md mb-4">
+                        <div className="flex justify-between text-sm text-slate-400 mb-2">
+                          <span>{videoProgress}% Complete</span>
+                          <span>
+                            {videoProgress < 30 ? 'Starting...' :
+                             videoProgress < 90 ? 'Generating...' : 'Finalizing...'}
+                          </span>
+                        </div>
+                        <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-fuchsia-500 to-purple-500 transition-all duration-500 ease-out"
+                            style={{ width: `${videoProgress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
                       <div className="flex items-center gap-2 text-sm text-slate-500">
                         <div className="w-2 h-2 bg-fuchsia-500 rounded-full animate-ping"></div>
                         <span>Processing with Google Veo 3...</span>

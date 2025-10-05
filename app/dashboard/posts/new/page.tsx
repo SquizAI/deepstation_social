@@ -10,6 +10,9 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { WorkflowGenerator } from '@/components/ai/workflow-generator'
+import { AIPostSuggestions } from '@/components/posts/ai-post-suggestions'
+import { ContentOptimizer } from '@/components/posts/content-optimizer'
+import { UniversalVoiceAssistant } from '@/components/ai-agent/universal-voice-assistant'
 
 type Platform = 'linkedin' | 'instagram' | 'twitter' | 'discord'
 
@@ -45,6 +48,8 @@ export default function NewPostPage() {
   } | null>(null)
   const [userId, setUserId] = React.useState<string | null>(null)
   const [isAIWorkflowOpen, setIsAIWorkflowOpen] = React.useState(false)
+  const [isPostSuggestionsOpen, setIsPostSuggestionsOpen] = React.useState(false)
+  const [isOptimizerOpen, setIsOptimizerOpen] = React.useState(false)
 
   // Fetch user and connected platforms
   React.useEffect(() => {
@@ -338,6 +343,37 @@ export default function NewPostPage() {
     }
   }
 
+  const handleUsePostIdea = (content: string, hashtags: string[]) => {
+    // Add the idea content and hashtags to all selected platforms
+    const updatedContent = { ...postContent }
+    const contentWithHashtags = `${content}\n\n${hashtags.join(' ')}`
+
+    selectedPlatforms.forEach(platform => {
+      updatedContent[platform] = contentWithHashtags
+    })
+
+    setPostContent(updatedContent)
+
+    setAlert({
+      variant: 'success',
+      title: 'Post Idea Applied',
+      message: 'The AI-generated post idea has been added to your content.'
+    })
+  }
+
+  const handleApplyOptimization = (platform: Platform, optimizedContent: string) => {
+    setPostContent(prev => ({
+      ...prev,
+      [platform]: optimizedContent
+    }))
+
+    setAlert({
+      variant: 'success',
+      title: 'Optimization Applied',
+      message: `Your ${platform} post has been optimized for better engagement.`
+    })
+  }
+
   const platformConfig = [
     { key: 'linkedin' as Platform, label: 'LinkedIn', icon: '💼', color: 'text-blue-600' },
     { key: 'instagram' as Platform, label: 'Instagram', icon: '📷', color: 'text-pink-600' },
@@ -405,6 +441,7 @@ export default function NewPostPage() {
                   >
                     <div className="flex items-center gap-3">
                       <Checkbox
+                        name={`platform_${key}`}
                         checked={selectedPlatforms.includes(key)}
                         disabled={!isConnected}
                         onChange={() => {}}
@@ -437,19 +474,39 @@ export default function NewPostPage() {
 
           {/* Post Editor */}
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 sm:p-6 hover:border-white/20 transition-all">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h2 className="text-lg font-semibold text-white">
                 Post Content
               </h2>
-              <button
-                onClick={() => setIsAIWorkflowOpen(true)}
-                className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white rounded-lg hover:from-purple-600 hover:to-fuchsia-600 shadow-lg shadow-purple-500/30 transition-all"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span className="font-medium">AI Generate</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsPostSuggestionsOpen(true)}
+                  className="group flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/30 transition-all text-sm"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  <span className="font-medium hidden sm:inline">Post Ideas</span>
+                </button>
+                <button
+                  onClick={() => setIsOptimizerOpen(true)}
+                  className="group flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 shadow-lg shadow-green-500/30 transition-all text-sm"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <span className="font-medium hidden sm:inline">Optimize</span>
+                </button>
+                <button
+                  onClick={() => setIsAIWorkflowOpen(true)}
+                  className="group flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white rounded-lg hover:from-purple-600 hover:to-fuchsia-600 shadow-lg shadow-purple-500/30 transition-all text-sm"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span className="font-medium hidden sm:inline">AI Generate</span>
+                </button>
+              </div>
             </div>
             <PostEditor
               onSave={handleSaveDraft}
@@ -470,6 +527,7 @@ export default function NewPostPage() {
             <div className="space-y-2 mb-4">
               <label className="text-sm font-medium text-slate-300">Platform</label>
               <select
+                name="preview_platform"
                 value={activePreview}
                 onChange={(e) => setActivePreview(e.target.value as Platform)}
                 className="w-full h-10 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500 transition-all"
@@ -523,6 +581,26 @@ export default function NewPostPage() {
         onClose={() => setIsAIWorkflowOpen(false)}
         onContentGenerated={handleAIContentGenerated}
       />
+
+      {/* AI Post Suggestions Modal */}
+      <AIPostSuggestions
+        isOpen={isPostSuggestionsOpen}
+        onClose={() => setIsPostSuggestionsOpen(false)}
+        onUseIdea={handleUsePostIdea}
+        userIndustry="Technology"
+        selectedPlatforms={selectedPlatforms}
+      />
+
+      {/* Content Optimizer Modal */}
+      <ContentOptimizer
+        isOpen={isOptimizerOpen}
+        onClose={() => setIsOptimizerOpen(false)}
+        content={postContent}
+        onApplyOptimization={handleApplyOptimization}
+      />
+
+      {/* Universal Voice Assistant */}
+      <UniversalVoiceAssistant forceFormType="post" />
       </div>
     </div>
   )

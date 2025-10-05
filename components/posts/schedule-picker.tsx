@@ -95,6 +95,7 @@ export function SchedulePicker({ onSchedule, onPostNow }: SchedulePickerProps) {
           <input
             type="date"
             id="date"
+            name="schedule_date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             min={minDate}
@@ -110,6 +111,7 @@ export function SchedulePicker({ onSchedule, onPostNow }: SchedulePickerProps) {
           <input
             type="time"
             id="time"
+            name="schedule_time"
             value={selectedTime}
             onChange={(e) => setSelectedTime(e.target.value)}
             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -123,6 +125,7 @@ export function SchedulePicker({ onSchedule, onPostNow }: SchedulePickerProps) {
           </label>
           <Select
             id="timezone"
+            name="schedule_timezone"
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
           >
@@ -141,6 +144,7 @@ export function SchedulePicker({ onSchedule, onPostNow }: SchedulePickerProps) {
           </label>
           <Select
             id="recurring"
+            name="schedule_recurring"
             value={recurringFrequency}
             onChange={(e) => setRecurringFrequency(e.target.value as RecurringOptions['frequency'])}
           >
