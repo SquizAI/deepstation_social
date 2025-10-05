@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build response for all platforms
-    const platforms: Platform[] = ['linkedin', 'instagram', 'twitter', 'discord'];
+    const platforms: Platform[] = ['linkedin', 'instagram', 'twitter', 'discord', 'resend', 'sendgrid'];
     const accounts: PlatformAccountData[] = platforms.map((platform) => {
       const tokenData = platformMap.get(platform);
 

@@ -2,7 +2,7 @@
  * OAuth Type Definitions for DeepStation
  */
 
-export type Platform = 'linkedin' | 'instagram' | 'twitter' | 'discord';
+export type Platform = 'linkedin' | 'instagram' | 'twitter' | 'discord' | 'resend' | 'sendgrid';
 
 export interface OAuthToken {
   id: string;
@@ -60,6 +60,8 @@ export interface PlatformStatus {
   instagram: boolean;
   twitter: boolean;
   discord: boolean;
+  resend: boolean;
+  sendgrid: boolean;
 }
 
 export interface OAuthStatusResponse {

@@ -12,9 +12,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Import Veo3 service (we'll need to make it work in Netlify context)
-import { GoogleGenAI } from '@google/genai';
-
 const handler: Handler = async (event) => {
   try {
     const { jobId } = JSON.parse(event.body || '{}');
@@ -57,9 +54,6 @@ const handler: Handler = async (event) => {
     const config = job.config;
 
     try {
-      // Initialize Google GenAI
-      const client = new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_API_KEY! });
-
       // Enhance prompt with style
       const styleDescriptions = {
         cinematic: 'cinematic photography, professional color grading, shallow depth of field, film grain',
@@ -83,24 +77,63 @@ const handler: Handler = async (event) => {
         .update({ progress: 30 })
         .eq('id', jobId);
 
-      // Start video generation
-      const model = 'veo-3.0-fast-generate-001';
-      let operation = await client.models.generateVideos({
-        model,
-        prompt: enhancedPrompt,
-        config: {
-          aspectRatio: config.aspectRatio || '16:9',
-          resolution: config.resolution,
-        },
-      });
+      // Determine model based on speed preference
+      const modelName = config.speed === 'fast' ? 'veo-3.0-fast-generate-001' : 'veo-3.0-generate-001';
 
-      // Poll until video is ready (max 2 minutes)
-      const maxAttempts = 24; // 2 minutes with 5s intervals
+      // Start video generation using correct Veo 3 API
+      const startResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning`,
+        {
+          method: 'POST',
+          headers: {
+            'x-goog-api-key': process.env.GOOGLE_AI_API_KEY!,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            instances: [{
+              prompt: enhancedPrompt,
+            }],
+            parameters: {
+              aspectRatio: config.aspectRatio || '16:9',
+              resolution: config.resolution || '1080p',
+            },
+          }),
+        }
+      );
+
+      if (!startResponse.ok) {
+        const errorText = await startResponse.text();
+        throw new Error(`Veo 3 API error: ${startResponse.status} - ${errorText}`);
+      }
+
+      const { name: operationName } = await startResponse.json();
+      console.log('[Netlify BG] Operation started:', operationName);
+
+      // Poll until video is ready (max 5 minutes for Veo 3)
+      const maxAttempts = 60; // 5 minutes with 5s intervals
       let attempts = 0;
+      let operationDone = false;
+      let videoUrl = '';
+      let thumbnailUrl = '';
 
-      while (!operation.done && attempts < maxAttempts) {
+      while (!operationDone && attempts < maxAttempts) {
         await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds
-        operation = await client.operations.getVideosOperation({ operation });
+
+        const pollResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/${operationName}`,
+          {
+            headers: {
+              'x-goog-api-key': process.env.GOOGLE_AI_API_KEY!,
+            },
+          }
+        );
+
+        if (!pollResponse.ok) {
+          throw new Error(`Failed to poll operation: ${pollResponse.status}`);
+        }
+
+        const operation = await pollResponse.json();
+        operationDone = operation.done;
         attempts++;
 
         // Update progress (30% to 90% during generation)
@@ -109,20 +142,22 @@ const handler: Handler = async (event) => {
           .from('video_generation_jobs')
           .update({ progress })
           .eq('id', jobId);
+
+        if (operationDone) {
+          // Extract video URL from response
+          const response = operation.response;
+          videoUrl = response?.predictions?.[0]?.bytesBase64Encoded
+            ? `data:video/mp4;base64,${response.predictions[0].bytesBase64Encoded}`
+            : response?.predictions?.[0]?.videoUri || '';
+          thumbnailUrl = response?.predictions?.[0]?.thumbnailUri || videoUrl;
+
+          console.log('[Netlify BG] Operation complete, video URL:', videoUrl?.substring(0, 100));
+        }
       }
 
-      if (!operation.done) {
-        throw new Error('Video generation timeout - operation did not complete');
+      if (!operationDone) {
+        throw new Error('Video generation timeout - operation did not complete in 5 minutes');
       }
-
-      // Extract video URL
-      const videoData = operation.response as any;
-      const videoUrl =
-        videoData?.generatedVideos?.[0]?.video?.uri ||
-        videoData?.uri ||
-        videoData?.videoUri ||
-        '';
-      const thumbnailUrl = videoData?.thumbnailUri || videoUrl;
 
       if (!videoUrl) {
         throw new Error('No video URL returned from Veo 3');

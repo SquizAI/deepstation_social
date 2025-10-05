@@ -176,6 +176,76 @@ const platformConfigs: Record<Platform, PlatformConfig> = {
         helpText: 'Direct webhook URL for posting to a specific channel'
       }
     ]
+  },
+  resend: {
+    name: 'Resend',
+    icon: '📧',
+    color: 'bg-black',
+    gradient: 'from-gray-800 to-black',
+    bgColor: 'bg-gray-50/50',
+    textColor: 'text-black',
+    description: 'Send transactional emails and campaigns with Resend',
+    scopes: ['email.send'],
+    docsUrl: 'https://resend.com/docs/introduction',
+    developerUrl: 'https://resend.com/api-keys',
+    credentialFields: [
+      {
+        name: 'apiKey',
+        label: 'API Key',
+        placeholder: 'Enter your Resend API Key (re_...)',
+        type: 'password',
+        helpText: 'Get this from your Resend dashboard > API Keys'
+      },
+      {
+        name: 'fromEmail',
+        label: 'From Email',
+        placeholder: 'noreply@yourdomain.com',
+        type: 'text',
+        helpText: 'The email address to send from (must be verified in Resend)'
+      },
+      {
+        name: 'fromName',
+        label: 'From Name (Optional)',
+        placeholder: 'Your Company Name',
+        type: 'text',
+        helpText: 'Display name for outgoing emails'
+      }
+    ]
+  },
+  sendgrid: {
+    name: 'SendGrid',
+    icon: '✉️',
+    color: 'bg-[#1A82E2]',
+    gradient: 'from-[#1A82E2] to-[#0B5FAB]',
+    bgColor: 'bg-blue-50/50',
+    textColor: 'text-[#1A82E2]',
+    description: 'Send emails and newsletters with SendGrid',
+    scopes: ['mail.send'],
+    docsUrl: 'https://docs.sendgrid.com/api-reference/how-to-use-the-sendgrid-v3-api/authentication',
+    developerUrl: 'https://app.sendgrid.com/settings/api_keys',
+    credentialFields: [
+      {
+        name: 'apiKey',
+        label: 'API Key',
+        placeholder: 'Enter your SendGrid API Key (SG....)',
+        type: 'password',
+        helpText: 'Get this from SendGrid Settings > API Keys'
+      },
+      {
+        name: 'fromEmail',
+        label: 'From Email',
+        placeholder: 'noreply@yourdomain.com',
+        type: 'text',
+        helpText: 'The email address to send from (must be verified in SendGrid)'
+      },
+      {
+        name: 'fromName',
+        label: 'From Name (Optional)',
+        placeholder: 'Your Company Name',
+        type: 'text',
+        helpText: 'Display name for outgoing emails'
+      }
+    ]
   }
 }
 

@@ -5,8 +5,6 @@
  * Pricing: Veo 3 Fast - $0.40 per second with audio
  */
 
-import { GoogleGenAI } from '@google/genai';
-
 export interface Veo3VideoOptions {
   prompt: string;
   resolution: '720p' | '1080p';
@@ -41,12 +39,11 @@ export interface Veo3ImageToVideoOptions {
  * Generate professional videos from text or images using Google's Veo 3
  */
 export class Veo3Service {
-  private client: GoogleGenAI;
   private apiKey: string;
+  private baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.GOOGLE_AI_API_KEY || '';
-    this.client = new GoogleGenAI({ apiKey: this.apiKey });
   }
 
   /**
@@ -70,53 +67,88 @@ export class Veo3Service {
       // Enhance prompt with style and technical details
       const enhancedPrompt = this.enhancePrompt(options.prompt, options);
 
-      // Start video generation using Veo 3 (always includes audio)
-      const model = 'veo-3.0-fast-generate-001'; // Fast variant
+      // Use Veo 3 Fast model
+      const model = 'veo-3.0-fast-generate-001';
 
-      let operation = await this.client.models.generateVideos({
-        model,
-        prompt: enhancedPrompt,
-        config: {
-          aspectRatio: options.aspectRatio || '16:9',
-          resolution: options.resolution,
-        },
-      });
+      // Start video generation using correct Veo 3 API
+      const startResponse = await fetch(
+        `${this.baseUrl}/models/${model}:predictLongRunning`,
+        {
+          method: 'POST',
+          headers: {
+            'x-goog-api-key': this.apiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            instances: [{
+              prompt: enhancedPrompt,
+            }],
+            parameters: {
+              aspectRatio: options.aspectRatio || '16:9',
+              resolution: options.resolution,
+            },
+          }),
+        }
+      );
 
-      // Poll until video is ready (max 2 minutes)
-      const maxAttempts = 24; // 2 minutes with 5s intervals
-      let attempts = 0;
-
-      while (!operation.done && attempts < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds
-        operation = await this.client.operations.getVideosOperation({
-          operation,
-        });
-        attempts++;
+      if (!startResponse.ok) {
+        const errorText = await startResponse.text();
+        throw new Error(`Veo 3 API error: ${startResponse.status} - ${errorText}`);
       }
 
-      if (!operation.done) {
-        throw new Error('Video generation timeout - operation did not complete');
+      const { name: operationName } = await startResponse.json();
+      console.log('[Veo3] Operation started:', operationName);
+
+      // Poll until video is ready (max 5 minutes)
+      const maxAttempts = 60; // 5 minutes with 5s intervals
+      let attempts = 0;
+      let operationDone = false;
+      let videoUrl = '';
+      let thumbnailUrl = '';
+
+      while (!operationDone && attempts < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds
+
+        const pollResponse = await fetch(
+          `${this.baseUrl}/${operationName}`,
+          {
+            headers: {
+              'x-goog-api-key': this.apiKey,
+            },
+          }
+        );
+
+        if (!pollResponse.ok) {
+          throw new Error(`Failed to poll operation: ${pollResponse.status}`);
+        }
+
+        const operation = await pollResponse.json();
+        operationDone = operation.done;
+        attempts++;
+
+        if (operationDone) {
+          // Extract video URL from response
+          const response = operation.response;
+          console.log('[Veo3] Full operation response:', JSON.stringify(operation, null, 2));
+
+          videoUrl = response?.predictions?.[0]?.bytesBase64Encoded
+            ? `data:video/mp4;base64,${response.predictions[0].bytesBase64Encoded}`
+            : response?.predictions?.[0]?.videoUri || '';
+          thumbnailUrl = response?.predictions?.[0]?.thumbnailUri || videoUrl;
+
+          console.log('[Veo3] Extracted URLs:', { videoUrl: videoUrl?.substring(0, 100), thumbnailUrl });
+        }
+      }
+
+      if (!operationDone) {
+        throw new Error('Video generation timeout - operation did not complete in 5 minutes');
+      }
+
+      if (!videoUrl) {
+        throw new Error('No video URL returned from Veo 3');
       }
 
       const generationTime = Date.now() - startTime;
-
-      // Extract video URL from response
-      const videoData = operation.response as any;
-      console.log('[Veo3] Full operation response:', JSON.stringify(operation, null, 2));
-
-      const videoUrl =
-        videoData?.generatedVideos?.[0]?.video?.uri ||
-        videoData?.uri ||
-        videoData?.videoUri ||
-        '';
-      const thumbnailUrl = videoData?.thumbnailUri || videoUrl;
-
-      console.log('[Veo3] Extracted URLs:', { videoUrl, thumbnailUrl });
-
-      if (!videoUrl) {
-        console.error('[Veo3] No video URL found in response:', videoData);
-        throw new Error('No video URL returned from Veo 3');
-      }
 
       const result = {
         videoUrl,
@@ -128,7 +160,7 @@ export class Veo3Service {
         generationTime,
       };
 
-      console.log('[Veo3] Returning result:', result);
+      console.log('[Veo3] Returning result:', { ...result, videoUrl: result.videoUrl.substring(0, 100) });
       return result;
     } catch (error) {
       console.error('Veo 3 generation error:', error);
