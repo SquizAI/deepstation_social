@@ -119,7 +119,7 @@ export function Navbar({ user }: NavbarProps) {
                   />
                 </svg>
               }
-              onClick={() => router.push('/dashboard/profile?tab=events')}
+              onClick={() => router.push('/dashboard/my-events')}
             >
               My Events
             </DropdownMenuItem>
@@ -140,7 +140,7 @@ export function Navbar({ user }: NavbarProps) {
                   />
                 </svg>
               }
-              onClick={() => router.push('/dashboard/settings')}
+              onClick={() => router.push('/dashboard/settings/profile')}
             >
               Settings
             </DropdownMenuItem>
