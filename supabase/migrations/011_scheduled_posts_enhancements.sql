@@ -4,6 +4,9 @@
 
 BEGIN;
 
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- =============================================
 -- ALTER SCHEDULED_POSTS TABLE
 -- =============================================
